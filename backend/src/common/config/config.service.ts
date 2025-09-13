@@ -25,20 +25,9 @@ export interface OpenAIConfig {
 	maxTokens: number
 }
 
-export interface SpeechConfig {
-	ttsEndpointUrl: string
-	sttEndpointUrl: string
-	atlantiApiKey?: string
-}
-
 export interface SecurityConfig {
 	backendCorsOrigins: string[]
 	allowedHosts: string[]
-}
-
-export interface FreeChatConfig {
-	archiveIntervalDays: number
-	freeChatMaxTokens: number
 }
 
 export interface S3Config {
@@ -69,19 +58,11 @@ export class AppConfigService {
 		}
 	}
 
-	// Separate JWT for admin
-	get adminJwt(): JwtConfig {
+	// Separate JWT for users
+	get userJwt(): JwtConfig {
 		return {
-			secret: this.get<string>('ADMIN_JWT_SECRET', 'changeme'),
-			expiresIn: this.get<string>('ADMIN_JWT_EXPIRATION', '24h'),
-		}
-	}
-
-	// Separate JWT for learners
-	get learnerJwt(): JwtConfig {
-		return {
-			secret: this.get<string>('LEARNER_JWT_SECRET', 'changeme'),
-			expiresIn: this.get<string>('LEARNER_JWT_EXPIRATION', '720h'),
+			secret: this.get<string>('USER_JWT_SECRET', 'changeme'),
+			expiresIn: this.get<string>('USER_JWT_EXPIRATION', '720h'),
 		}
 	}
 
@@ -111,14 +92,6 @@ export class AppConfigService {
 		}
 	}
 
-	get speech(): SpeechConfig {
-		return {
-			ttsEndpointUrl: this.get<string>('TTS_ENDPOINT_URL', ''),
-			sttEndpointUrl: this.get<string>('STT_ENDPOINT_URL', ''),
-			atlantiApiKey: this.get<string>('ATLANTI_API_KEY'),
-		}
-	}
-
 	get s3(): S3Config {
 		return {
 			accessEndpoint: this.get<string>('S3_ACCESS_ENDPOINT', 'http://localhost:9000'),
@@ -138,13 +111,6 @@ export class AppConfigService {
 	}
 	get isProduction(): boolean {
 		return this.nodeEnv === 'production'
-	}
-
-	get freeChat(): FreeChatConfig {
-		return {
-			archiveIntervalDays: this.get<number>('FREE_CHAT_ARCHIVE_INTERVAL_DAYS', 30),
-			freeChatMaxTokens: this.get<number>('FREE_CHAT_MAX_TOKENS', 4000),
-		}
 	}
 
 	get security(): SecurityConfig {
