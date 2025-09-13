@@ -12,7 +12,7 @@
 		"build": "nest build",
 		"format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
 		"start": "nest start",
-		"dev": "bun run prisma:generate && nest start --watch",
+		"dev": "nest start --watch",
 		"start:debug": "nest start --debug --watch",
 		"start:prod": "node dist/main",
 		"start:migrate:prod": "bunx prisma migrate deploy && bun run start:prod",

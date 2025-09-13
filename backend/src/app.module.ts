@@ -4,13 +4,13 @@ import { DevtoolsModule } from '@nestjs/devtools-integration'
 import { LoggerModule } from 'nestjs-pino'
 
 import { AppConfigModule } from './common/config/config.module'
-import { UsersAuthModule } from './modules/auth/users/users-auth.module'
 import { PrismaModule } from './prisma/prisma.module'
 
 import { SecurityMiddleware } from './common/middleware/security.middleware'
 
 import { ScheduleModule } from '@nestjs/schedule'
 import { BossModule } from './common/queue/boss.module'
+import { AuthModule } from './modules/auth/auth.module'
 
 @Module({
 	imports: [
@@ -30,7 +30,7 @@ import { BossModule } from './common/queue/boss.module'
 		BossModule,
 		PrismaModule,
 		// authentication
-		UsersAuthModule,
+		AuthModule,
 	],
 })
 export class AppModule implements NestModule {
