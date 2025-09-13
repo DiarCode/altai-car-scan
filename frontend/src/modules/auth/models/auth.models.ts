@@ -15,6 +15,7 @@ export interface RegisterRequest {
 	carModel: string
 	carYear: number
 	carColor: string
+	carVin: string
 	city: KazakhstanCity
 }
 
@@ -31,5 +32,6 @@ export interface User {
 	carModel: string
 	carYear: number
 	carColor: string
+	carVin: string
 	city: KazakhstanCity
 }

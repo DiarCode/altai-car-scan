@@ -20,6 +20,7 @@ export function useAuth() {
 		carModel: '',
 		carYear: new Date().getFullYear(),
 		carColor: '',
+		carVin: '',
 		city: '' as KazakhstanCity | '',
 		step: 'form' as 'form' | 'otp'
 	})
@@ -64,6 +65,7 @@ export function useAuth() {
 				carModel: registerState.carModel,
 				carYear: registerState.carYear,
 				carColor: registerState.carColor,
+				carVin: registerState.carVin,
 				city: registerState.city as KazakhstanCity
 			}
 			
@@ -117,6 +119,7 @@ export function useAuth() {
 		registerState.carModel = ''
 		registerState.carYear = new Date().getFullYear()
 		registerState.carColor = ''
+		registerState.carVin = ''
 		registerState.city = ''
 		registerState.step = 'form'
 		otpCode.value = ''

@@ -226,8 +226,8 @@ onMounted(() => {
 			<!-- Info Section -->
 			<div class="mt-8 p-4 bg-card rounded-lg border border-border">
 				<div class="flex items-start space-x-3">
-					<div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-						<svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<div class="w-8 h-8 bg-primary/70 rounded-full flex items-center justify-center flex-shrink-0 border border-primary-foreground/10">
+						<svg class="w-4 h-4 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 						</svg>
 					</div>
@@ -247,7 +247,7 @@ onMounted(() => {
 		<div class="px-6 pb-6 text-center">
 			<p class="text-sm text-muted-foreground">
 				Нет аккаунта?
-				<button @click="goToRegister" class="text-primary hover:underline">
+				<button @click="goToRegister" class="text-lime-600 hover:underline">
 					Зарегистрируйтесь
 				</button>
 			</p>

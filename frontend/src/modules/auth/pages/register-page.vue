@@ -1,3 +1,209 @@
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuth } from '../composables/use-auth.composable'
+import { KAZAKHSTAN_CITIES } from '../constants/cities.constants'
+import AppInput from '../components/app-input.vue'
+import AppButton from '../components/app-button.vue'
+import AppSelect from '../components/app-select.vue'
+import OtpInput from '../components/otp-input.vue'
+
+const router = useRouter()
+const authState = useAuth()
+
+const resendTimer = ref(0)
+let resendInterval: NodeJS.Timeout | null = null
+
+const currentYear = new Date().getFullYear()
+
+// City options for select
+const cityOptions = computed(() => {
+	return KAZAKHSTAN_CITIES.map(city => ({
+		value: city,
+		label: city
+	}))
+})
+
+// Validation errors
+const phoneError = computed(() => {
+	if (!authState.registerState.phoneNumber) return undefined
+	const digits = authState.registerState.phoneNumber.replace(/\D/g, '')
+	// Should have exactly 11 digits for +7 format or 8 format
+	return (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8')))
+		? undefined 
+		: 'Неверный формат номера телефона'
+})
+
+const nameError = computed(() => {
+	if (!authState.registerState.name) return undefined
+	return authState.registerState.name.trim().length < 2 
+		? 'Имя должно содержать минимум 2 символа' 
+		: undefined
+})
+
+const carModelError = computed(() => {
+	if (!authState.registerState.carModel) return undefined
+	return authState.registerState.carModel.trim().length < 2 
+		? 'Модель должна содержать минимум 2 символа' 
+		: undefined
+})
+
+const carYearError = computed(() => {
+	const year = authState.registerState.carYear
+	if (!year) return undefined
+	return (year < 1990 || year > currentYear) 
+		? `Год должен быть между 1990 и ${currentYear}` 
+		: undefined
+})
+
+const carColorError = computed(() => {
+	if (!authState.registerState.carColor) return undefined
+	return authState.registerState.carColor.trim().length < 2 
+		? 'Цвет должен содержать минимум 2 символа' 
+		: undefined
+})
+
+const carVinError = computed(() => {
+	if (!authState.registerState.carVin) return undefined
+	const vin = authState.registerState.carVin.trim().toUpperCase()
+	
+	// VIN should be exactly 17 characters
+	if (vin.length !== 17) {
+		return 'VIN номер должен содержать ровно 17 символов'
+	}
+	
+	// VIN should contain only alphanumeric characters (excluding I, O, Q)
+	const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/
+	if (!vinRegex.test(vin)) {
+		return 'VIN номер содержит недопустимые символы'
+	}
+	
+	return undefined
+})
+
+const cityError = computed(() => {
+	if (!authState.registerState.city) return undefined
+	return !KAZAKHSTAN_CITIES.some(city => city === authState.registerState.city)
+		? 'Выберите город из списка' 
+		: undefined
+})
+
+// Form validation
+const isValidForm = computed(() => {
+	return !phoneError.value && 
+		   !nameError.value && 
+		   !carModelError.value && 
+		   !carYearError.value && 
+		   !carColorError.value && 
+		   !carVinError.value &&
+		   !cityError.value &&
+		   authState.registerState.phoneNumber &&
+		   authState.registerState.name &&
+		   authState.registerState.carModel &&
+		   authState.registerState.carYear &&
+		   authState.registerState.carColor &&
+		   authState.registerState.carVin &&
+		   authState.registerState.city
+})
+
+const formatRegisterPhone = (value: string) => {
+	// Remove all non-digits first
+	let cleanValue = value.replace(/\D/g, '')
+	
+	// Limit to maximum 11 digits
+	cleanValue = cleanValue.slice(0, 11)
+	
+	// If starts with 8, replace with 7
+	if (cleanValue.startsWith('8')) {
+		cleanValue = '7' + cleanValue.slice(1)
+	}
+	
+	// If starts with 7, add + prefix
+	if (cleanValue.startsWith('7')) {
+		return '+' + cleanValue
+	} else if (cleanValue.length > 0) {
+		// If user types any other number, assume they want Kazakhstan format
+		return '+7' + cleanValue
+	} else {
+		return ''
+	}
+}
+
+const handlePhoneInput = (value: string | number) => {
+	const stringValue = String(value)
+	const formatted = formatRegisterPhone(stringValue)
+	authState.registerState.phoneNumber = formatted
+}
+
+const handleVinInput = (value: string | number) => {
+	const stringValue = String(value).toUpperCase()
+	authState.registerState.carVin = stringValue
+}
+
+const handleRegister = async () => {
+	await authState.register()
+	if (authState.registerState.step === 'otp') {
+		startResendTimer()
+	}
+}
+
+const handleOtpVerification = async () => {
+	await authState.verifyOtp(authState.registerState.phoneNumber, authState.otpCode.value)
+}
+
+const handleOtpComplete = async (otp: string) => {
+	if (otp.length === 4) {
+		await authState.verifyOtp(authState.registerState.phoneNumber, otp)
+	}
+}
+
+const resendCode = async () => {
+	if (resendTimer.value > 0) return
+	
+	await authState.register()
+	startResendTimer()
+}
+
+const startResendTimer = () => {
+	resendTimer.value = 60
+	resendInterval = setInterval(() => {
+		resendTimer.value--
+		if (resendTimer.value <= 0) {
+			if (resendInterval) {
+				clearInterval(resendInterval)
+				resendInterval = null
+			}
+		}
+	}, 1000)
+}
+
+const goBack = () => {
+	if (authState.registerState.step === 'otp') {
+		authState.registerState.step = 'form'
+		authState.otpCode.value = ''
+		authState.error.value = null
+	} else {
+		router.push('/welcome')
+	}
+}
+
+const goToLogin = () => {
+	router.push('/auth/login')
+}
+
+// Cleanup
+onUnmounted(() => {
+	if (resendInterval) {
+		clearInterval(resendInterval)
+	}
+})
+
+// Reset form when component mounts
+onMounted(() => {
+	authState.resetForm()
+})
+</script>
+
 <template>
 	<div class="min-h-screen bg-background flex flex-col">
 		<!-- Header -->
@@ -88,6 +294,17 @@
 							:error="carColorError"
 						/>
 						
+						<app-input
+							:modelValue="authState.registerState.carVin"
+							@update:modelValue="handleVinInput"
+							label="VIN номер"
+							placeholder="например, 1HGBH41JXMN109186"
+							required
+							:error="carVinError"
+							hint="17-символьный уникальный номер автомобиля"
+							:maxlength="17"
+						/>
+						
 						<app-select
 							v-model="authState.registerState.city"
 							label="Город"
@@ -171,8 +388,8 @@
 			<!-- Info Section -->
 			<div class="mt-8 p-4 bg-card rounded-lg border border-border">
 				<div class="flex items-start space-x-3">
-					<div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-						<svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<div class="w-8 h-8 bg-primary/70 rounded-full flex items-center justify-center flex-shrink-0 border border-primary-foreground/10">
+						<svg class="w-4 h-4 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 						</svg>
 					</div>
@@ -192,191 +409,10 @@
 		<div class="px-6 pb-6 text-center">
 			<p class="text-sm text-muted-foreground">
 				Уже есть аккаунт?
-				<button @click="goToLogin" class="text-primary hover:underline">
+				<button @click="goToLogin" class="text-lime-600 hover:underline">
 					Войти
 				</button>
 			</p>
 		</div>
 	</div>
 </template>
-
-<script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuth } from '../composables/use-auth.composable'
-import { KAZAKHSTAN_CITIES } from '../constants/cities.constants'
-import AppInput from '../components/app-input.vue'
-import AppButton from '../components/app-button.vue'
-import AppSelect from '../components/app-select.vue'
-import OtpInput from '../components/otp-input.vue'
-
-const router = useRouter()
-const authState = useAuth()
-
-const resendTimer = ref(0)
-let resendInterval: NodeJS.Timeout | null = null
-
-const currentYear = new Date().getFullYear()
-
-// City options for select
-const cityOptions = computed(() => {
-	return KAZAKHSTAN_CITIES.map(city => ({
-		value: city,
-		label: city
-	}))
-})
-
-// Validation errors
-const phoneError = computed(() => {
-	if (!authState.registerState.phoneNumber) return undefined
-	const digits = authState.registerState.phoneNumber.replace(/\D/g, '')
-	// Should have exactly 11 digits for +7 format or 8 format
-	return (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8')))
-		? undefined 
-		: 'Неверный формат номера телефона'
-})
-
-const nameError = computed(() => {
-	if (!authState.registerState.name) return undefined
-	return authState.registerState.name.trim().length < 2 
-		? 'Имя должно содержать минимум 2 символа' 
-		: undefined
-})
-
-const carModelError = computed(() => {
-	if (!authState.registerState.carModel) return undefined
-	return authState.registerState.carModel.trim().length < 2 
-		? 'Модель должна содержать минимум 2 символа' 
-		: undefined
-})
-
-const carYearError = computed(() => {
-	const year = authState.registerState.carYear
-	if (!year) return undefined
-	return (year < 1990 || year > currentYear) 
-		? `Год должен быть между 1990 и ${currentYear}` 
-		: undefined
-})
-
-const carColorError = computed(() => {
-	if (!authState.registerState.carColor) return undefined
-	return authState.registerState.carColor.trim().length < 2 
-		? 'Цвет должен содержать минимум 2 символа' 
-		: undefined
-})
-
-const cityError = computed(() => {
-	if (!authState.registerState.city) return undefined
-	return !KAZAKHSTAN_CITIES.some(city => city === authState.registerState.city)
-		? 'Выберите город из списка' 
-		: undefined
-})
-
-// Form validation
-const isValidForm = computed(() => {
-	return !phoneError.value && 
-		   !nameError.value && 
-		   !carModelError.value && 
-		   !carYearError.value && 
-		   !carColorError.value && 
-		   !cityError.value &&
-		   authState.registerState.phoneNumber &&
-		   authState.registerState.name &&
-		   authState.registerState.carModel &&
-		   authState.registerState.carYear &&
-		   authState.registerState.carColor &&
-		   authState.registerState.city
-})
-
-const formatRegisterPhone = (value: string) => {
-	// Remove all non-digits first
-	let cleanValue = value.replace(/\D/g, '')
-	
-	// Limit to maximum 11 digits
-	cleanValue = cleanValue.slice(0, 11)
-	
-	// If starts with 8, replace with 7
-	if (cleanValue.startsWith('8')) {
-		cleanValue = '7' + cleanValue.slice(1)
-	}
-	
-	// If starts with 7, add + prefix
-	if (cleanValue.startsWith('7')) {
-		return '+' + cleanValue
-	} else if (cleanValue.length > 0) {
-		// If user types any other number, assume they want Kazakhstan format
-		return '+7' + cleanValue
-	} else {
-		return ''
-	}
-}
-
-const handlePhoneInput = (value: string | number) => {
-	const stringValue = String(value)
-	const formatted = formatRegisterPhone(stringValue)
-	authState.registerState.phoneNumber = formatted
-}
-
-const handleRegister = async () => {
-	await authState.register()
-	if (authState.registerState.step === 'otp') {
-		startResendTimer()
-	}
-}
-
-const handleOtpVerification = async () => {
-	await authState.verifyOtp(authState.registerState.phoneNumber, authState.otpCode.value)
-}
-
-const handleOtpComplete = async (otp: string) => {
-	if (otp.length === 4) {
-		await authState.verifyOtp(authState.registerState.phoneNumber, otp)
-	}
-}
-
-const resendCode = async () => {
-	if (resendTimer.value > 0) return
-	
-	await authState.register()
-	startResendTimer()
-}
-
-const startResendTimer = () => {
-	resendTimer.value = 60
-	resendInterval = setInterval(() => {
-		resendTimer.value--
-		if (resendTimer.value <= 0) {
-			if (resendInterval) {
-				clearInterval(resendInterval)
-				resendInterval = null
-			}
-		}
-	}, 1000)
-}
-
-const goBack = () => {
-	if (authState.registerState.step === 'otp') {
-		authState.registerState.step = 'form'
-		authState.otpCode.value = ''
-		authState.error.value = null
-	} else {
-		router.push('/welcome')
-	}
-}
-
-const goToLogin = () => {
-	router.push('/auth/login')
-}
-
-// Cleanup
-onUnmounted(() => {
-	if (resendInterval) {
-		clearInterval(resendInterval)
-	}
-})
-
-// Reset form when component mounts
-onMounted(() => {
-	authState.resetForm()
-})
-</script>
