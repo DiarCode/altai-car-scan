@@ -21,8 +21,7 @@ export function useAuth() {
 		carYear: new Date().getFullYear(),
 		carColor: '',
 		carVin: '',
-		city: '' as KazakhstanCity | '',
-		step: 'form' as 'form' | 'otp'
+		city: '' as KazakhstanCity | ''
 	})
 	
 	const otpCode = ref('')
@@ -72,7 +71,11 @@ export function useAuth() {
 			const response = await authService.register(request)
 			
 			if (response.success) {
-				registerState.step = 'otp'
+				// After successful registration, redirect to login with pre-filled phone
+				router.push({
+					path: '/auth/login',
+					query: { phone: registerState.phoneNumber }
+				})
 			} else {
 				error.value = response.message
 			}
@@ -95,7 +98,7 @@ export function useAuth() {
 					localStorage.setItem('token', response.token)
 				}
 				// Navigate to scan page
-				router.push('/scan')
+				router.push('/app/home')
 			} else {
 				error.value = response.message
 			}
@@ -106,8 +109,8 @@ export function useAuth() {
 		}
 	}
 	
-	const logout = () => {
-		authService.logout()
+	const logout = async () => {
+		await authService.logout()
 		router.push('/welcome')
 	}
 	
@@ -121,7 +124,6 @@ export function useAuth() {
 		registerState.carColor = ''
 		registerState.carVin = ''
 		registerState.city = ''
-		registerState.step = 'form'
 		otpCode.value = ''
 		error.value = null
 	}
