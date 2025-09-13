@@ -1,5 +1,5 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common'
-import { UsersSessionService } from 'src/modules/auth/users/services/users-session.service'
+import { UsersSessionService } from 'src/modules/auth/services/users-session.service'
 import { CookieService } from '../services/cookie.service'
 import { PrismaService } from 'src/prisma/prisma.service'
 import { UserRequest } from '../types/user-request.interface'
