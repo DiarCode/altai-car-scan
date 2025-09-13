@@ -8,10 +8,11 @@ import { parseExpirationDate } from 'src/common/utils/expiration.util'
 import { UsersAuthGuard } from 'src/common/guards/users-auth.guard'
 import { GetCurrentUser } from 'src/common/decorators/get-current-users.decorator'
 import {
-	RequestUserOtpDto,
+	RequestOtpDto,
 	VerifyUserOtpDto,
 	UserDto,
 	SuccessVerifyOtpResponse,
+	SignUpDto,
 } from './dtos/users-auth.dtos'
 import { UsersOtpService } from './services/users-otp.service'
 import { UsersSessionService } from './services/users-session.service'
@@ -35,8 +36,8 @@ export class UsersAuthController {
 		status: 200,
 		description: 'OTP requested successfully',
 	})
-	async requestOtp(@Body() dto: RequestUserOtpDto) {
-		await this.otp.generateLearnerOtp(dto.phoneNumber)
+	async requestOtp(@Body() dto: RequestOtpDto) {
+		await this.otp.generateUserOtp(dto.phoneNumber)
 		return
 	}
 
@@ -67,6 +68,17 @@ export class UsersAuthController {
 			success: true,
 			expiresIn: Math.floor(maxAgeMs / 1000),
 		}
+	}
+
+	@Post('signup')
+	@ApiResponse({
+		status: 200,
+		description: 'User signed up successfully',
+	})
+	async signUp(@Body() dto: SignUpDto) {
+		await this.profile.signUp(dto)
+		await this.otp.generateUserOtp(dto.phoneNumber)
+		return
 	}
 
 	/** 4) Logout */

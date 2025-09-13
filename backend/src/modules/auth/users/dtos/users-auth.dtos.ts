@@ -5,13 +5,50 @@ import { IsString, Matches, Length, IsNotEmpty } from 'class-validator'
 /**
  * Step 1: Request a one-time code
  */
-export class RequestUserOtpDto {
+export class RequestOtpDto {
 	@ApiProperty({ description: 'Phone in E.164 format' })
 	@IsString()
 	@Matches(/^\+\d{6,15}$/, { message: 'Must be E.164 format' })
 	phoneNumber: string
 }
 
+export class SignUpDto {
+	@ApiProperty({ description: 'Full name' })
+	@IsString()
+	@IsNotEmpty()
+	name: string
+
+	@ApiProperty({ description: 'Phone in E.164 format' })
+	@IsString()
+	@Matches(/^\+\d{6,15}$/, { message: 'Must be E.164 format' })
+	phoneNumber: string
+
+	@ApiProperty({ description: 'City' })
+	@IsString()
+	@IsNotEmpty()
+	city: string
+
+	// car info
+	@ApiProperty({ description: 'Car model' })
+	@IsString()
+	@IsNotEmpty()
+	carModel: string
+
+	@ApiProperty({ description: 'Car year' })
+	@IsString()
+	@IsNotEmpty()
+	carYear: number
+
+	@ApiProperty({ description: 'Car color' })
+	@IsString()
+	@IsNotEmpty()
+	carColor: string
+
+	@ApiProperty({ description: 'Car vin number' })
+	@IsString()
+	@IsNotEmpty()
+	vinNumber: string
+}
 /**
  * Step 2: Verify the code
  */
@@ -29,16 +66,6 @@ export class VerifyUserOtpDto {
 }
 
 /**
- * Step 3: Complete profile (onboarding)
- */
-export class CompleteProfileDto {
-	@ApiProperty({ description: 'Full name' })
-	@IsString()
-	@IsNotEmpty()
-	name: string
-}
-
-/**
  * “Me” response
  */
 export class UserDto {
@@ -50,6 +77,21 @@ export class UserDto {
 
 	@ApiProperty()
 	phoneNumber: string
+
+	@ApiProperty()
+	carModel: string
+
+	@ApiProperty()
+	carYear: number
+
+	@ApiProperty()
+	carColor: string
+
+	@ApiProperty()
+	vinNumber: string
+
+	@ApiProperty()
+	city: string
 
 	@ApiProperty()
 	createdAt: Date

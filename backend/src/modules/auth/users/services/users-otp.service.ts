@@ -22,7 +22,7 @@ export class UsersOtpService {
 	 * Upsert user by phone (with placeholder name + empty interests),
 	 * then generate & send OTP. Returns userId.
 	 */
-	async generateLearnerOtp(phone: string): Promise<number> {
+	async generateUserOtp(phone: string): Promise<number> {
 		const placeholderName = `user-${randomUUID()}`
 
 		const user = await this.prisma.user.upsert({

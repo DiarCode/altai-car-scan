@@ -2,12 +2,26 @@
 
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
-import { CompleteProfileDto, UserDto } from '../dtos/users-auth.dtos'
+import { SignUpDto, UserDto } from '../dtos/users-auth.dtos'
 import { toUserDto } from '../utils/users.mapper'
 
 @Injectable()
 export class UsersProfileService {
 	constructor(private readonly prisma: PrismaService) {}
+
+	async signUp(dto: SignUpDto): Promise<void> {
+		await this.prisma.user.create({
+			data: {
+				phoneNumber: dto.phoneNumber,
+				name: dto.name,
+				city: dto.city,
+				carModel: dto.carModel,
+				carYear: dto.carYear,
+				carColor: dto.carColor,
+				vinNumber: dto.vinNumber,
+			},
+		})
+	}
 
 	/** Find user by phone (for OTP verify) */
 	async findByPhone(phone: string): Promise<{ id: number }> {
@@ -17,16 +31,6 @@ export class UsersProfileService {
 		})
 		if (!user) throw new UnauthorizedException('No such user')
 		return user
-	}
-
-	/** Complete onboarding */
-	async completeProfile(userId: number, dto: CompleteProfileDto): Promise<void> {
-		await this.prisma.user.update({
-			where: { id: userId },
-			data: {
-				name: dto.name,
-			},
-		})
 	}
 
 	/** “Me” endpoint */
