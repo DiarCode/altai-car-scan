@@ -8,7 +8,7 @@ export interface PromptTemplate {
 
 @Injectable()
 export class PromptRegistry {
-  private readonly templates: Record<string, PromptTemplate> = {
+	private readonly templates: Record<string, PromptTemplate> = {
 		'theory-segments': {
 			system: `
       You are an expert tutor for a Talkpal, Ewa-style language app.
@@ -70,7 +70,7 @@ export class PromptRegistry {
     `,
 			maxTokens: 16384,
 		},
-  }
+	}
 
 	public get(key: string): PromptTemplate {
 		const tpl = this.templates[key]

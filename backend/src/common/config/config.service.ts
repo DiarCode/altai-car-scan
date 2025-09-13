@@ -42,6 +42,10 @@ export interface S3Config {
 	usePathStyle: boolean
 }
 
+export interface ClassificationPipelineUrl {
+	classificationPipelineUrl: string
+}
+
 @Injectable()
 export class AppConfigService {
 	constructor(private readonly config: NestConfigService) {}
@@ -104,6 +108,10 @@ export class AppConfigService {
 			audioPrefix: this.get<string>('S3_AUDIO_PREFIX', 'audio'),
 			usePathStyle: this.get<boolean>('S3_PATH_STYLE', true),
 		}
+	}
+
+	get classificationPipelineUrl(): string {
+		return this.get<string>('CLASSIFICATION_PIPELINE_URL', 'http://localhost:8000/classify')
 	}
 
 	get nodeEnv(): string {

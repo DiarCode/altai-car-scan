@@ -1,3 +1,30 @@
+model CarAnalysis {
+  id                Int                @id @default(autoincrement())
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            Int
+  carModel          String
+  carYear           Int
+  city              String
+  vin               String
+  createdAt         DateTime           @default(now())
+  totalEstimatedCost Int
+  zones             CarAnalysisZone[]
+}
+
+model CarAnalysisZone {
+  id           Int      @id @default(autoincrement())
+  analysis     CarAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  analysisId   Int
+  name         String
+  breaking     Boolean
+  hasRust      Boolean
+  isDirty      Boolean
+  importance   String
+  consequences String[]
+  estimatedCost Int
+  urgency      String
+  timeToFix    String?
+}
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -21,6 +48,7 @@ model User {
 
   otpRequest UsersOTPRequest?
   session    UsersSession?
+  analyses   CarAnalysis[]
 
   @@map("users")
 }
@@ -46,4 +74,30 @@ model UsersSession {
   expiresAt DateTime @map("expires_at")
 
   @@map("users_sessions")
+}
+
+enum SERVICE_TYPE {
+  REPAIR
+  MAINTENANCE
+  WASHING
+  TIRE_SERVICE
+  DIAGNOSTICS
+  OTHER
+}
+
+model InDrivePartner {
+  id        Int      @id @default(autoincrement()) @map("id")
+  name      String   @map("name")
+  address   String   @map("address")
+  phone     String   @map("phone")
+  description String?  @map("description")
+  serviceType SERVICE_TYPE @map("service_type")
+  rating    Float    @default(0) @map("rating")
+  reviewsCount Int   @default(0) @map("reviews_count")
+  latitude  Float    @map("latitude")
+  longitude Float    @map("longitude")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("indrive_partners")
 }

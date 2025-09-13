@@ -1,7 +1,7 @@
 // src/modules/auth/user/dtos/user-auth.dtos.ts
 
 import { ApiProperty } from '@nestjs/swagger'
-import { IsString, Matches, Length, IsNotEmpty } from 'class-validator'
+import { IsString, Matches, Length, IsNotEmpty, IsNumber } from 'class-validator'
 /**
  * Step 1: Request a one-time code
  */
@@ -35,7 +35,7 @@ export class SignUpDto {
 	carModel: string
 
 	@ApiProperty({ description: 'Car year' })
-	@IsString()
+	@IsNumber()
 	@IsNotEmpty()
 	carYear: number
 
