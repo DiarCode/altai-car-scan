@@ -1,15 +1,16 @@
 <template>
-	<div class="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100 text-slate-900">
+	<div class="min-h-screen bg-slate-100 text-slate-900">
 		<!-- Sticky glass header -->
 		<header
 			class="sticky top-0 z-30 px-5 py-4 bg-white/70 backdrop-blur-md border-b border-slate-200"
 		>
 			<div class="flex items-center justify-between">
 				<Button
+					size="icon"
+					variant="ghost"
 					@click="handleBack"
-					class="inline-flex items-center gap-1.5 rounded-xl bg-white/70 border border-slate-200 p-3 hover:bg-white transition-colors"
 				>
-					<ArrowLeft class="w-5 h-5 text-slate-700" />
+					<ArrowLeft class="size-6 text-slate-700" />
 				</Button>
 
 				<h1 class="text-lg font-semibold tracking-tight">
@@ -23,8 +24,8 @@
 						:key="z.key"
 						:class="[
               'w-2 h-2 rounded-full transition-all',
-              capturedZones.includes(z.key) ? 'bg-emerald-600'
-                : selectedZone === z.key ? 'bg-emerald-400'
+              capturedZones.includes(z.key) ? 'bg-lime-600'
+                : selectedZone === z.key ? 'bg-lime-600'
                 : 'bg-slate-300'
             ]"
 					/>
@@ -35,55 +36,51 @@
 		<!-- Step: select zone -->
 		<section
 			v-if="currentStep === 'select'"
-			class="px-5 pb-[calc(env(safe-area-inset-bottom)+6rem)] space-y-5"
+			class="px-5 pb-[calc(env(safe-area-inset-bottom)+6rem)] space-y-5 mt-4"
 		>
-			<div class="mt-4 rounded-2xl bg-white/70 backdrop-blur border border-slate-200 p-4">
-				<div class="flex items-start gap-3">
-					<Camera class="w-5 h-5 text-emerald-600 mt-0.5" />
-					<p class="text-sm text-slate-700">
-						Сфотографируйте все 4 зоны. Совмещайте авто с прозрачной схемой на экране.
-					</p>
-				</div>
-			</div>
-
 			<div class="space-y-3">
 				<button
 					v-for="z in zones"
 					:key="z.key"
 					@click="selectZone(z.key)"
-					class="w-full rounded-2xl bg-white/60 backdrop-blur-xl border border-slate-200 px-4 py-4 text-left hover:bg-white transition-colors"
+					class="w-full rounded-3xl bg-white/60 backdrop-blur-xl border border-slate-200 px-4 py-6 text-left hover:bg-white transition-colors"
 				>
 					<div class="flex items-center justify-between">
-						<div class="flex items-center gap-3">
+						<div class="flex items-center gap-4">
 							<component
 								:is="z.icon"
-								class="w-6 h-6 text-emerald-600"
+								class="size-7 text-lime-600"
 							/>
 							<div>
-								<h3 class="text-base font-semibold">{{ z.title }}</h3>
-								<p class="text-xs text-slate-600">{{ z.description }}</p>
+								<h3 class="text-lg font-semibold">{{ z.title }}</h3>
+								<p class="text-sm text-slate-600">{{ z.description }}</p>
 							</div>
 						</div>
 						<CheckCircle2
 							v-if="capturedZones.includes(z.key)"
-							class="w-5 h-5 text-emerald-600"
+							class="size-7 text-lime-600"
+						/>
+						<ChevronRight
+							v-else
+							class="size-6 text-slate-400"
 						/>
 					</div>
-					<p
-						class="mt-2 text-[11px] text-emerald-700 bg-emerald-50 inline-block px-2 py-1 rounded-md border border-emerald-200"
-					>
-						{{ z.tips }}
-					</p>
 				</button>
 			</div>
 
 			<button
 				v-if="capturedZones.length === 4"
-				class="w-full mt-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3"
+				class="w-full mt-4 rounded-2xl bg-primary hover:bg-primary/80 text-white font-semibold py-3"
 				@click="completeScanning"
 			>
 				Завершить сканирование
 			</button>
+
+			<div class="mt-4 rounded-2xl bg-white/70 backdrop-blur border border-slate-200 p-4">
+				<p class="text-sm text-slate-600">
+					Сфотографируйте все 4 зоны. Совмещайте авто с прозрачной схемой на экране.
+				</p>
+			</div>
 		</section>
 
 		<!-- Step: live camera -->
@@ -111,10 +108,10 @@
 
 				<!-- Soft grid (CSS only) -->
 				<div class="absolute inset-0 pointer-events-none">
-					<div class="absolute inset-y-0 left-1/3 w-px bg-emerald-500/15"></div>
-					<div class="absolute inset-y-0 left-2/3 w-px bg-emerald-500/15"></div>
-					<div class="absolute inset-x-0 top-1/3 h-px bg-emerald-500/15"></div>
-					<div class="absolute inset-x-0 top-2/3 h-px bg-emerald-500/15"></div>
+					<div class="absolute inset-y-0 left-1/3 w-px bg-primary/15"></div>
+					<div class="absolute inset-y-0 left-2/3 w-px bg-primary/15"></div>
+					<div class="absolute inset-x-0 top-1/3 h-px bg-primary/15"></div>
+					<div class="absolute inset-x-0 top-2/3 h-px bg-primary/15"></div>
 				</div>
 
 				<!-- Tip -->
@@ -133,12 +130,7 @@
 				>
 					<div>
 						<p class="text-sm text-slate-700">{{ errorMsg }}</p>
-						<button
-							class="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 text-white px-4 py-2 text-sm font-semibold"
-							@click="initCamera"
-						>
-							<Camera class="w-4 h-4" /> Включить камеру
-						</button>
+						<Button @click="initCamera"><Camera class="w-4 h-4" /> Включить камеру</Button>
 					</div>
 				</div>
 			</div>
@@ -151,7 +143,7 @@
 						@click="capturePhoto"
 						:class="[
               'w-16 h-16 rounded-full grid place-items-center transition',
-              streamReady ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+              streamReady ? 'bg-primary hover:bg-primary/80 text-primary-foreground' : 'bg-slate-300 text-slate-500 cursor-not-allowed'
             ]"
 						aria-label="Сделать снимок"
 					>
@@ -186,7 +178,7 @@
 
 			<div class="rounded-2xl bg-white/70 backdrop-blur border border-slate-200 p-4">
 				<div class="flex items-start gap-3">
-					<CheckCircle2 class="w-5 h-5 text-emerald-600 mt-0.5" />
+					<CheckCircle2 class="w-5 h-5 text-primary mt-0.5" />
 					<div>
 						<h3 class="font-semibold">Качество снимка</h3>
 						<p class="text-sm text-slate-700">
@@ -204,7 +196,7 @@
 					Переснять
 				</button>
 				<button
-					class="flex-1 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+					class="flex-1 px-5 py-3 rounded-xl bg-primary hover:bg-primary/60 text-white font-semibold"
 					@click="acceptPhoto"
 				>
 					Принять
@@ -215,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowLeft, Camera, CheckCircle2, RotateCcw } from 'lucide-vue-next';
+import { ArrowLeft, Camera, CheckCircle2, ChevronRight, RotateCcw } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -254,10 +246,10 @@ const capturedPhoto = ref<string>('')
 
 // Zones
 const zones = [
-  { key: 'front', title: 'Передняя зона', description: 'Капот, бампер, фары', tips: 'Угол ~45°, авто по центру', icon: Camera },
-  { key: 'left',  title: 'Левая сторона', description: 'Двери, крылья, пороги', tips: 'Держите камеру на уровне ручек', icon: Camera },
-  { key: 'right', title: 'Правая сторона', description: 'Двери, крылья, пороги', tips: 'Держите камеру на уровне ручек', icon: Camera },
-  { key: 'rear',  title: 'Задняя зона',    description: 'Бампер, багажник, фонари', tips: 'Угол ~45°, авто по центру', icon: Camera }
+  { key: 'front', title: 'Передняя зона', description: 'Капот, бампер, фары', icon: Camera },
+  { key: 'left',  title: 'Левая сторона', description: 'Двери, крылья, пороги', icon: Camera },
+  { key: 'right', title: 'Правая сторона', description: 'Двери, крылья, пороги', icon: Camera },
+  { key: 'rear',  title: 'Задняя зона',    description: 'Бампер, багажник, фонари', icon: Camera }
 ] as const
 
 // Overlay mapping

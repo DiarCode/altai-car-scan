@@ -44,6 +44,6 @@ const props = withDefaults(defineProps<Props>(), { size: 148, tone: 'primary', l
 const circumference = 2 * Math.PI * 52
 const dashOffset = computed(() => circumference - (props.value / 100) * circumference)
 const colorClass = computed(() =>
-  props.tone === 'red' ? 'text-red-600' : props.tone === 'amber' ? 'text-amber-600' : 'text-emerald-500'
+  props.tone === 'red' ? 'text-red-600' : props.tone === 'amber' ? 'text-amber-600' : 'text-primary'
 )
 </script>

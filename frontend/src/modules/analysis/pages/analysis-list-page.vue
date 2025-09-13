@@ -1,102 +1,89 @@
+<!-- ScanHistory.vue -->
 <template>
-	<div class="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100 text-slate-900">
-		<!-- Header -->
-		<header
-			class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 pt-4 pb-3"
-		>
-			<div class="flex items-center justify-between gap-3">
-				<div class="min-w-0">
-					<p class="text-[11px] uppercase tracking-[0.18em] text-slate-500">История</p>
-					<h1 class="mt-0.5 text-xl sm:text-2xl font-semibold truncate">Анализ сканирований</h1>
-				</div>
-				<div class="flex items-center gap-2 shrink-0">
-					<button
-						class="h-10 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:opacity-90 transition"
-						@click="toggleSortOrder"
-						aria-label="Сортировать по дате"
-					>
-						<ArrowUpDown class="w-5 h-5 text-slate-700" />
-					</button>
-					<button
-						class="h-10 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:opacity-90 text-white font-medium"
-						@click="$router.push({ name: 'scan' })"
-					>
-						<Plus class="w-4 h-4 inline -mt-0.5" />
-						<span class="ml-1 hidden xs:inline">Скан</span>
-					</button>
-				</div>
-			</div>
+	<div class="min-h-screen bg-gradient-to-b from-slate-100 to-slate-100 text-slate-900">
+		<!-- Sticky header -->
+		<div class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
+			<div class="px-6 py-4 max-w-screen-sm mx-auto">
+				<div class="flex items-center justify-between gap-3 mb-5">
+					<div class="min-w-0">
+						<h1 class="text-2xl font-bold tracking-tight">История сканирований</h1>
+					</div>
 
-			<!-- Segmented filter -->
-			<div class="mt-3 grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl">
-				<button
-					v-for="opt in FILTERS"
-					:key="opt.value"
-					@click="selectedFilter = opt.value"
-					:class="[
-            'h-9 rounded-lg text-xs font-medium transition',
-            selectedFilter === opt.value
-              ? 'bg-white text-slate-900'
-              : 'text-slate-600'
-          ]"
-				>
-					{{ opt.label }}
-				</button>
-			</div>
-			<div class="mt-2 text-[11px] text-slate-500">
-				{{ filteredScans.length }} из {{ scans.length }}
-			</div>
-		</header>
+					<div class="flex gap-2 shrink-0">
+						<Button
+							variant="secondary"
+							size="icon"
+							class="h-10 w-10"
+							aria-label="Сортировать"
+							@click="toggleSortOrder"
+						>
+							<ArrowUpDown class="w-5 h-5" />
+						</Button>
+					</div>
+				</div>
 
-		<!-- Main -->
-		<main class="px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] max-w-screen-sm mx-auto">
-			<!-- Empty -->
-			<div
+				<!-- Filter tabs (segmented) -->
+				<Tabs v-model="selectedFilter">
+					<TabsList class="grid grid-cols-3 w-full bg-slate-100 rounded-xl h-12">
+						<TabsTrigger
+							v-for="f in FILTERS"
+							:key="f.value"
+							:value="f.value"
+							class="data-[state=active]:bg-white data-[state=active]:text-slate-900 rounded-lg text-sm font-medium transition"
+						>
+							<component
+								:is="f.icon"
+								class="w-4 h-4 mr-1.5"
+							/>
+							{{ f.label }}
+						</TabsTrigger>
+					</TabsList>
+				</Tabs>
+			</div>
+		</div>
+
+		<!-- Content -->
+		<div class="px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] max-w-screen-sm mx-auto">
+			<!-- Empty state -->
+			<Card
 				v-if="scans.length === 0"
-				class="text-center py-14"
+				class="text-center"
 			>
-				<div class="w-20 h-20 bg-slate-100 rounded-full grid place-items-center mx-auto mb-5">
-					<History class="w-10 h-10 text-slate-400" />
-				</div>
-				<h3 class="text-lg font-semibold mb-1">Нет сканирований</h3>
-				<p class="text-slate-600 mb-5 text-sm">Начните сканирование, чтобы увидеть историю.</p>
-				<RouterLink
-					:to="{ name: 'scan' }"
-					class="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
-				>
-					<Camera class="w-5 h-5" />
-					Первое сканирование
-				</RouterLink>
-			</div>
+				<CardContent>
+					<div class="w-20 h-20 bg-slate-100 rounded-full grid place-items-center mx-auto mb-5">
+						<History class="w-10 h-10 text-slate-400" />
+					</div>
+					<h3 class="text-lg font-semibold mb-1">Нет сканирований</h3>
+					<p class="text-slate-600 mb-5 text-sm">Начните сканирование, чтобы увидеть историю.</p>
+					<Button
+						class="bg-primary hover:bg-primary text-white"
+						@click="goScan"
+					>
+						<Camera class="w-5 h-5 mr-2" /> Первое сканирование
+					</Button>
+				</CardContent>
+			</Card>
 
 			<!-- List -->
 			<div
 				v-else
-				class="space-y-4"
+				class="space-y-3"
 			>
-				<button
+				<Card
 					v-for="scan in filteredScans"
 					:key="scan.id"
-					class="w-full text-left rounded-2xl bg-white/70 backdrop-blur border border-slate-200 hover:bg-white active:opacity-95 transition"
+					class="hover:bg-white/90 transition cursor-pointer"
 					@click="openScanDetails(scan.id)"
 				>
-					<div class="p-4">
-						<!-- Title = date -->
-						<div class="flex items-start justify-between gap-3 mb-2">
+					<CardContent>
+						<!-- Header -->
+						<div class="flex items-start justify-between mb-3 gap-3">
 							<div class="min-w-0">
-								<div class="flex items-center gap-2">
-									<h3 class="text-base sm:text-lg font-semibold truncate">
-										{{ formatDate(scan.createdAt) }}
-									</h3>
-									<span
-										:class="['px-2 py-0.5 rounded-full text-[11px] font-medium shrink-0', overallClass(scan)]"
-									>
-										{{ overallLabel(scan) }}
-									</span>
+								<div class="flex items-center gap-2 mb-1">
+									<Calendar class="w-4 h-4 text-slate-400" />
+									<span class="font-semibold truncate">{{ formatDate(scan.createdAt) }}</span>
 								</div>
-								<div
-									class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-slate-600"
-								>
+								<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-slate-600">
 									<span class="flex items-center gap-1 min-w-0">
 										<Car class="w-4 h-4" />
 										<span class="truncate">{{ scan.carModel }}</span>
@@ -106,106 +93,86 @@
 									</span>
 								</div>
 							</div>
-
-							<div class="text-right shrink-0">
-								<p class="text-[11px] text-slate-500">Ремонт</p>
-								<p class="text-sm font-semibold">{{ formatCurrency(scan.estimatedCost) }}</p>
-							</div>
+							<ChevronRight class="w-5 h-5 text-slate-400 shrink-0" />
 						</div>
 
-						<!-- Zones -->
-						<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+						<!-- Status + cost -->
+						<div class="flex items-center justify-between">
+							<p class="font-bold text-slate-900">{{ formatCurrency(scan.estimatedCost) }}</p>
+
 							<div
-								v-for="zone in scan.zones"
-								:key="zone.name"
-								class="rounded-xl border border-slate-200 bg-white/60 p-2"
+								class="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border"
+								:class="statusColorClass(getStatusInfo(scan).severity)"
 							>
-								<p class="text-[12px] font-medium text-slate-800 mb-1">{{ zone.name }}</p>
-								<div class="flex flex-wrap items-center gap-1.5">
-									<!-- breaking -->
-									<span
-										:class="[
-                      'px-1.5 py-0.5 rounded-md text-[11px] font-medium border',
-                      zone.breaking ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    ]"
-										title="Поломка"
-									>
-										Поломка: {{ zone.breaking ? 'Да' : 'Нет' }}
-									</span>
-									<!-- rust -->
-									<span
-										:class="[
-                      'px-1.5 py-0.5 rounded-md text-[11px] font-medium border',
-                      zone.hasRust ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-slate-50 text-slate-700 border-slate-200'
-                    ]"
-										title="Ржавчина"
-									>
-										Ржа: {{ zone.hasRust ? 'Да' : 'Нет' }}
-									</span>
-									<!-- dirty -->
-									<span
-										:class="[
-                      'px-1.5 py-0.5 rounded-md text-[11px] font-medium border',
-                      zone.isDirty ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-700 border-slate-200'
-                    ]"
-										title="Грязь"
-									>
-										Грязь: {{ zone.isDirty ? 'Да' : 'Нет' }}
-									</span>
-								</div>
+								<component
+									:is="getStatusInfo(scan).icon"
+									class="w-4 h-4"
+								/>
+								{{ getStatusInfo(scan).label }}
 							</div>
 						</div>
-
-						<!-- Arrow -->
-						<div class="mt-3 flex justify-end">
-							<ChevronRight class="w-5 h-5 text-slate-400" />
-						</div>
-					</div>
-				</button>
+					</CardContent>
+				</Card>
 			</div>
-		</main>
+		</div>
 
-		<TabBar />
+		<PrimaryTabbar />
 	</div>
 </template>
 
 <script setup lang="ts">
-import { ArrowUpDown, Camera, Car, ChevronRight, History, MapPin, Plus } from 'lucide-vue-next';
+/* shadcn-vue components */
+import { AlertTriangle, ArrowUpDown, Calendar, Camera, Car, CheckCircle, ChevronRight, History, MapPin, Wrench } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 
 
 
-import TabBar from '@/core/layouts/primary/primary-tabbar.vue';
+import { Button } from '@/core/components/ui/button';
+import { Card, CardContent } from '@/core/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/core/components/ui/tabs';
+import PrimaryTabbar from "@/core/layouts/primary/primary-tabbar.vue";
 
 
 
 
 
-type ZoneRow = { name: 'Передняя' | 'Левая' | 'Правая' | 'Задняя'; breaking: boolean; hasRust: boolean; isDirty: boolean }
-type ScanRow = { id: string; carModel: string; location: string; createdAt: Date; estimatedCost: number; zones: ZoneRow[] }
+type ZoneRow = {
+  name: 'Передняя' | 'Левая' | 'Правая' | 'Задняя'
+  breaking: boolean
+  hasRust: boolean
+  isDirty: boolean
+}
+type ScanRow = {
+  id: string
+  carModel: string
+  location: string
+  createdAt: Date
+  estimatedCost: number
+  zones: ZoneRow[]
+}
 
-const router = useRouter()
-
-// Segmented filters
 const FILTERS = [
-  { value: 'all',       label: 'Все' },
-  { value: 'withBreak', label: 'С поломками' },
-  { value: 'noBreak',   label: 'Без поломок' }
+  { value: 'all',       label: 'Все',      icon: History },
+  { value: 'withBreak', label: 'Поломки',  icon: AlertTriangle },
+  { value: 'noBreak',   label: 'Норма',    icon: CheckCircle }
 ] as const
 type FilterVal = typeof FILTERS[number]['value']
 
+const router = useRouter()
+
+/* state */
 const selectedFilter = ref<FilterVal>('all')
 const sortOrder = ref<'desc' | 'asc'>('desc')
 
-// Demo data
+/* demo data */
 const scans = ref<ScanRow[]>([
   {
     id: 'scan_001',
     carModel: 'Toyota Camry 2019',
     location: 'Алматы',
     createdAt: new Date('2025-09-12T14:30:00'),
-    estimatedCost: 850_000,
+    estimatedCost: 850000,
     zones: [
       { name: 'Передняя', breaking: true,  hasRust: true,  isDirty: true  },
       { name: 'Левая',    breaking: false, hasRust: false, isDirty: false },
@@ -218,7 +185,7 @@ const scans = ref<ScanRow[]>([
     carModel: 'Honda CR-V 2021',
     location: 'Алматы',
     createdAt: new Date('2025-09-10T09:15:00'),
-    estimatedCost: 320_000,
+    estimatedCost: 320000,
     zones: [
       { name: 'Передняя', breaking: false, hasRust: false, isDirty: true  },
       { name: 'Левая',    breaking: false, hasRust: false, isDirty: false },
@@ -231,7 +198,7 @@ const scans = ref<ScanRow[]>([
     carModel: 'BMW X5 2018',
     location: 'Астана',
     createdAt: new Date('2025-09-05T16:45:00'),
-    estimatedCost: 1_200_000,
+    estimatedCost: 1200000,
     zones: [
       { name: 'Передняя', breaking: false, hasRust: false, isDirty: true  },
       { name: 'Левая',    breaking: false, hasRust: false, isDirty: false },
@@ -241,16 +208,32 @@ const scans = ref<ScanRow[]>([
   }
 ])
 
-// Helpers
+/* helpers */
 const hasAnyBreaking = (s: ScanRow) => s.zones.some(z => z.breaking)
-const overallLabel = (s: ScanRow) => (hasAnyBreaking(s) ? 'Есть поломки' : s.zones.some(z => z.hasRust || z.isDirty) ? 'Только обслуживание' : 'Без проблем')
-const overallClass = (s: ScanRow) => (hasAnyBreaking(s) ? 'bg-red-100 text-red-800' : s.zones.some(z => z.hasRust || z.isDirty) ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')
+const hasOnlyMaintenance = (s: ScanRow) => !hasAnyBreaking(s) && s.zones.some(z => z.hasRust || z.isDirty)
 
-// Filter + sort
+const getStatusInfo = (s: ScanRow) => {
+  if (hasAnyBreaking(s)) {
+    return { label: 'Требует ремонта', severity: 'high' as const, icon: AlertTriangle }
+  }
+  if (hasOnlyMaintenance(s)) {
+    return { label: 'Обслуживание', severity: 'medium' as const, icon: Wrench }
+  }
+  return { label: 'Отлично', severity: 'low' as const, icon: CheckCircle }
+}
+
+const statusColorClass = (sev: 'high' | 'medium' | 'low') =>
+  sev === 'high'
+    ? 'bg-red-50 text-red-700 border-red-200'
+    : sev === 'medium'
+      ? 'bg-amber-50 text-amber-700 border-amber-200'
+      : 'bg-primary-50 text-primary border-primary'
+
 const filteredScans = computed(() => {
   let data = scans.value
   if (selectedFilter.value === 'withBreak') data = data.filter(hasAnyBreaking)
   if (selectedFilter.value === 'noBreak')   data = data.filter(s => !hasAnyBreaking(s))
+
   return data
     .slice()
     .sort((a, b) =>
@@ -260,12 +243,14 @@ const filteredScans = computed(() => {
     )
 })
 
-// Actions
-const toggleSortOrder = () => (sortOrder.value = sortOrder.value === 'desc' ? 'asc' : 'desc')
-const openScanDetails = (id: string) => router.push({ name: 'scan-details', params: { id } })
-
-// Formatters
 const formatDate = (d: Date) =>
-  d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).replace('.', '')
-const formatCurrency = (v: number) => new Intl.NumberFormat('kk-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(v)
+  d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+
+const formatCurrency = (v: number) =>
+  new Intl.NumberFormat('kk-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(v)
+
+/* actions */
+const toggleSortOrder = () => (sortOrder.value = sortOrder.value === 'desc' ? 'asc' : 'desc')
+const goScan = () => router.push({ name: 'scan' })
+const openScanDetails = (id: string) => router.push({ name: 'analysis-details', params: { id } })
 </script>
