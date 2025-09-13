@@ -5,6 +5,7 @@ app = modal.App("indrive-quality")
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
+    .apt_install("libgl1", "libglib2.0-0")
     .pip_install_from_requirements("requirements.txt")
     .add_local_dir("models", "/models")     # ✅ copies your local models
     .add_local_dir("utils", "/app_utils")   # ✅ copies utils
