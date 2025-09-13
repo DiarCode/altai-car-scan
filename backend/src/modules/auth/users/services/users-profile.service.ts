@@ -1,29 +1,28 @@
-// src/modules/auth/learner/services/learner-profile.service.ts
+// src/modules/auth/user/services/user-profile.service.ts
 
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
-import { CompleteProfileDto, LearnerDto } from '../dtos/users-auth.dtos'
-import { toLearnerDto } from '../utils/users.mapper'
-import { LEVEL_CODE } from '@prisma/client'
+import { CompleteProfileDto, UserDto } from '../dtos/users-auth.dtos'
+import { toUserDto } from '../utils/users.mapper'
 
 @Injectable()
 export class UsersProfileService {
 	constructor(private readonly prisma: PrismaService) {}
 
-	/** Find learner by phone (for OTP verify) */
-	async findByPhone(phone: string): Promise<{ id: number; verified: boolean }> {
-		const learner = await this.prisma.users.findUnique({
+	/** Find user by phone (for OTP verify) */
+	async findByPhone(phone: string): Promise<{ id: number }> {
+		const user = await this.prisma.user.findUnique({
 			where: { phoneNumber: phone },
-			select: { id: true, verified: true },
+			select: { id: true },
 		})
-		if (!learner) throw new UnauthorizedException('No such learner')
-		return learner
+		if (!user) throw new UnauthorizedException('No such user')
+		return user
 	}
 
 	/** Complete onboarding */
-	async completeProfile(learnerId: number, dto: CompleteProfileDto): Promise<void> {
-		await this.prisma.users.update({
-			where: { id: learnerId },
+	async completeProfile(userId: number, dto: CompleteProfileDto): Promise<void> {
+		await this.prisma.user.update({
+			where: { id: userId },
 			data: {
 				name: dto.name,
 			},
@@ -31,8 +30,8 @@ export class UsersProfileService {
 	}
 
 	/** “Me” endpoint */
-	async getById(userId: number): Promise<LearnerDto> {
-		const raw = await this.prisma.users.findUnique({
+	async getById(userId: number): Promise<UserDto> {
+		const raw = await this.prisma.user.findUnique({
 			where: { id: userId },
 		})
 
@@ -40,6 +39,6 @@ export class UsersProfileService {
 			throw new NotFoundException(`User #${userId} not found`)
 		}
 
-		return toLearnerDto(raw)
+		return toUserDto(raw)
 	}
 }

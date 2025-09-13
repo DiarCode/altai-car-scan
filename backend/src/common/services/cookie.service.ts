@@ -4,7 +4,7 @@ import { AppConfigService } from '../config/config.service'
 
 @Injectable()
 export class CookieService {
-	private readonly cookieName = 'ITUTOR_SESSION'
+	private readonly cookieName = 'ALTAI_SESSION'
 	private readonly maxAge: number
 
 	constructor(private readonly config: AppConfigService) {
