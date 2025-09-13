@@ -111,7 +111,10 @@ export class AppConfigService {
 	}
 
 	get classificationPipelineUrl(): string {
-		return this.get<string>('CLASSIFICATION_PIPELINE_URL', 'http://localhost:8000/classify')
+		return this.get<string>(
+			'CLASSIFICATION_PIPELINE_URL',
+			'https://maulerrr--indrive-quality-analyze-bytes.modal.run',
+		)
 	}
 
 	get nodeEnv(): string {

@@ -14,16 +14,12 @@ image = (
         "uvicorn",
     )
     .add_local_dir("./models", "/root/models", copy=True)                       # detector.pt, severity.pt, (optional) carparts-seg.pt
-    # Copy local utils folder into /root so it is importable as 'app_utils'.
-    # Original failure: copied to /app_utils (parent '/' not on sys.path). Placing under /root fixes imports.
     .add_local_dir("./utils", "/root/app_utils", copy=True)                # pipeline + angle
 )
 
 # ---------- (Optional) seed once to warm Ultralytics caches ----------
 @app.function(
     image=image, gpu="T4", timeout=600,
-    enable_memory_snapshot=True,
-    experimental_options={"enable_gpu_snapshot": True},
 )
 def seed_models():
     from ultralytics import YOLO
@@ -58,8 +54,8 @@ class InDriveInspector:
                 # Real dependency missing inside the module => surface it
                 raise
 
-        det_path = "/models/detector.pt"
-        cls_path = "/models/severity.pt"
+        det_path = "./models/detector.pt"
+        cls_path = "./models/severity.pt"
         seg_path = None  # None => pipeline fallback to yolov8s-seg.pt
         self.pipe = DamagePipeline(det_path, cls_path, seg_path)
         self.angle = AngleClassifier()
@@ -79,8 +75,8 @@ class InDriveInspector:
             else:
                 raise
 
-        det_path = "/models/detector.pt"
-        cls_path = "/models/severity.pt"
+        det_path = "./models/detector.pt"
+        cls_path = "./models/severity.pt"
         seg_path = None
         self.pipe = DamagePipeline(det_path, cls_path, seg_path)
         self.angle = AngleClassifier()

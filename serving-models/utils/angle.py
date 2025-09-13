@@ -9,11 +9,8 @@ ANGLE_LABELS = [
     "rear view of a car",
     "left side view of a car",
     "right side view of a car",
-    "close-up detail of a car",
-    "interior of a car",
-    "unknown or partial car"
 ]
-ANGLE_KEYS = ["front","back","left","right","closeup","interior","unknown"]
+ANGLE_KEYS = ["front","back","left","right"]
 
 class AngleClassifier:
     def __init__(self, device: str = None, model_name: str = "ViT-B-32", ckpt: str = "laion2b_s34b_b79k"):

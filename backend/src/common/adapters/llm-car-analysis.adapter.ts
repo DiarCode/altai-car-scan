@@ -1,10 +1,9 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common'
 import { OpenAI } from 'openai'
 import {
-	ClassificationPipelineResult,
 	LLMCarAnalysisResult,
 	isLLMCarAnalysisResultValid,
-} from 'src/modules/image-classification/image-classification.service'
+} from 'src/modules/image-classification/interfaces'
 import { PromptBuilderService } from '../llm/prompt.builder'
 import { AppConfigService } from '../config/config.service'
 
@@ -22,14 +21,14 @@ export class LLMCarAnalysisAdapter {
 	}
 
 	async analyze(
-		pipelineResult: ClassificationPipelineResult,
+		mappedPipelineResult: Record<string, any>,
 		userId: number,
 		carInfo: { carModel: string; carYear: number; city: string; vin: string },
 		partners: any[],
 		services: any[],
 	): Promise<LLMCarAnalysisResult> {
 		const { messages, maxTokens } = this.promptBuilder.buildCarAnalysisPrompt(
-			pipelineResult,
+			mappedPipelineResult,
 			carInfo,
 			partners,
 			services,

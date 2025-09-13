@@ -1,5 +1,5 @@
 import { CarAnalysis } from '@prisma/client'
-import { LLMCarZoneAnalysis } from '../image-classification.service'
+import { LLMCarZoneAnalysis } from '../interfaces'
 
 export class CarAnalysisZoneDto {
 	name: string
