@@ -37,6 +37,7 @@ export class UsersAuthController {
 		description: 'OTP requested successfully',
 	})
 	async requestOtp(@Body() dto: RequestOtpDto) {
+		await this.profile.findByPhone(dto.phoneNumber)
 		await this.otp.generateUserOtp(dto.phoneNumber)
 		return
 	}
