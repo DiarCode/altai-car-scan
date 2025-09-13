@@ -13,6 +13,59 @@ const routes: RouteRecordRaw[] = [
 			layout: 'blank',
 		},
 	},
+	{
+		path: '/app/home',
+		name: 'home',
+		component: () => import('@/modules/home/pages/home-page.vue'),
+		meta: {
+			title: 'CarScan - Главная',
+			description: 'Главная страница приложения CarScan.',
+			layout: 'blank',
+		},
+	},
+	{
+		path: '/app/scan',
+		name: 'scan',
+		component: () => import('@/modules/scan/scan-page.vue'),
+		meta: {
+			title: 'CarScan - Сканирование',
+			description: 'Страница сканирования автомобиля.',
+			layout: 'blank',
+		},
+	},
+
+	{
+		path: '/app/profile',
+		name: 'profile',
+		component: () => import('@/modules/home/pages/home-page.vue'),
+		meta: {
+			title: 'CarScan - Профиль',
+			description: 'Страница профиля пользователя.',
+			layout: 'blank',
+		},
+	},
+
+	{
+		path: '/app/analysis',
+		name: 'analysis',
+		component: () => import('@/modules/analysis/pages/analysis-list-page.vue'),
+		meta: {
+			title: 'CarScan - Результаты',
+			description: 'Страница результатов сканирования.',
+			layout: 'blank',
+		},
+	},
+
+	{
+		path: '/app/analysis/:id',
+		name: 'analysis-details',
+		component: () => import('@/modules/analysis/pages/analysis-details-page.vue'),
+		meta: {
+			title: 'CarScan - Результаты',
+			description: 'Страница результатов сканирования.',
+			layout: 'blank',
+		},
+	},
 ]
 
 // Create router instance

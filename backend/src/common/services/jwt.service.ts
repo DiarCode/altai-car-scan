@@ -49,12 +49,12 @@ export class JwtService {
 	}
 
 	signLearner(payload: LearnerJwtPayload, overrideExp?: string): string {
-		const secret = this.config.learnerJwt.secret
+		const secret = this.config.userJwt.secret
 		if (!secret) {
 			throw new UnauthorizedException('Learner JWT secret is not configured')
 		}
 
-		const rawExpires: string = overrideExp ?? this.config.learnerJwt.expiresIn
+		const rawExpires: string = overrideExp ?? this.config.userJwt.expiresIn
 		const expiresIn = rawExpires as SignOptions['expiresIn']
 		const options: SignOptions = { expiresIn }
 
@@ -62,7 +62,7 @@ export class JwtService {
 	}
 
 	verifyLearner(token: string): LearnerJwtPayload {
-		const secret = this.config.learnerJwt.secret
+		const secret = this.config.userJwt.secret
 		if (!secret) {
 			throw new UnauthorizedException('Learner JWT secret is not configured')
 		}
