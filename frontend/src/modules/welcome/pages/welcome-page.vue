@@ -13,19 +13,9 @@ const goToLogin = () => {
 </script>
 
 <template>
-	<div class="min-h-screen bg-white flex flex-col relative overflow-hidden">
-		<!-- Circular Gradient Background -->
-		<div class="absolute inset-0 pointer-events-none">
-			<!-- Large circular gradient positioned as shown in your drawing -->
-			<div class="absolute top-1/2 right-0 w-96 h-96 transform -translate-y-1/2 translate-x-1/3">
-				<div class="w-full h-full rounded-full bg-gradient-radial from-primary via-primary/50 to-white/0"></div>
-				<!-- Central dot -->
-				<div class="absolute top-1/2 left-1/2 w-4 h-4 bg-primary rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
-			</div>
-		</div>
-		
+	<div class="min-h-screen bg-white flex flex-col">
 		<!-- Main Content -->
-		<div class="flex-1 flex flex-col items-center justify-center px-6 py-8 relative z-10">
+		<div class="flex-1 flex flex-col items-center justify-center px-6 py-8">
 			<!-- Logo/Brand Section -->
 			<div class="text-center mb-12">
 				<div class="w-24 h-24 mx-auto mb-6 bg-primary rounded-full flex items-center justify-center shadow-lg">
@@ -84,7 +74,7 @@ const goToLogin = () => {
 		</div>
 		
 		<!-- Bottom Actions -->
-		<div class="px-6 pb-8 space-y-4 flex flex-col items-center relative z-10">
+		<div class="px-6 pb-8 space-y-4 flex flex-col items-center">
 			<button
 				class="max-w-xl w-full bg-primary text-primary-foreground font-semibold py-4 px-6 rounded-lg transition-all duration-200 hover:bg-primary/90 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
 				@click="goToRegister"
@@ -103,21 +93,10 @@ const goToLogin = () => {
 </template>
 
 <style scoped>
-/* Radial gradient utility for circular fade effect */
-.bg-gradient-radial {
-	background: radial-gradient(circle, var(--tw-gradient-stops));
-}
-
 /* Additional mobile optimizations */
 @media (max-width: 375px) {
 	.grid {
 		gap: 0.75rem;
-	}
-	
-	/* Adjust gradient size and position for mobile */
-	.w-96.h-96 {
-		width: 16rem;
-		height: 16rem;
 	}
 }
 </style>
