@@ -2,16 +2,6 @@
 	<div
 		class="relative min-h-screen bg-gradient-to-b from-slate-100 to-slate-200 text-slate-900 overflow-hidden"
 	>
-		<!-- Subtle light pattern -->
-		<div class="fixed inset-0 pointer-events-none opacity-10">
-			<div
-				class="absolute inset-0"
-				:style="{
-          backgroundImage: `radial-gradient(circle at 20% 20%, rgba(16,185,129,0.25) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(148,163,184,0.3) 0%, transparent 45%)`
-        }"
-			/>
-		</div>
-
 		<!-- Header (sticky + glass) -->
 		<header
 			class="sticky top-0 z-20 px-6 py-4 bg-white/70 backdrop-blur-md border-b border-slate-200"
@@ -19,20 +9,32 @@
 			<div class="flex items-center justify-between">
 				<h1 class="mt-0.5 text-2xl font-semibold tracking-tight">Главная</h1>
 
-				<Button
-					variant="ghost"
-					size="lg"
-					@click="onChangeCity"
-				>
-					{{ city }}
+				<div class="flex items-center gap-2">
+					<Button
+						size="icon"
+						variant="ghost"
+					>
+						<Bell class="size-5 text-slate-600" />
+					</Button>
 
-					<ChevronDown class="w-4 h-4 text-slate-600" />
-				</Button>
+					<DropdownMenu>
+						<DropdownMenuTrigger>
+							<Avatar>
+								<AvatarFallback>CN</AvatarFallback>
+							</Avatar>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent>
+							<DropdownMenuItem class="text-destructive">
+								<LogOut class="mr-2 text-destructive" /> Выйти
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
 			</div>
 		</header>
 
 		<!-- Main -->
-		<main class="relative z-10 px-6 space-y-6 pb-32 mt-4 max-w-screen-sm mx-auto">
+		<main class="relative z-10 px-6 space-y-4 pb-32 mt-4 max-w-screen-sm mx-auto">
 			<!-- Readiness -->
 			<section class="rounded-3xl bg-white/60 backdrop-blur-xl border border-slate-200 p-6">
 				<div class="flex items-center justify-between gap-4 mb-4">
@@ -69,40 +71,63 @@
 
 			<!-- Latest Analysis (summary + priority) -->
 			<section class="rounded-2xl bg-white/60 backdrop-blur-xl border border-slate-200 p-6">
-				<div>
-					<div class="flex items-center gap-2 text-slate-600 text-sm">
-						<Calendar class="w-4 h-4" />
-						<span class="truncate">{{ formatDate(scanData.createdAt) }}</span>
+				<div class="flex items-center justify-between gap-2">
+					<div>
+						<h3 class="text-xl font-semibold tracking-tight">Последний анализ</h3>
+						<span class="text-sm text-slate-600">{{ formatDate(scanData.createdAt) }}</span>
 					</div>
-					<h3 class="mt-1 text-lg font-semibold tracking-tight">Последний анализ</h3>
 
-					<!-- Priority mini-list -->
-					<div class="mt-3 space-y-2">
-						<div
-							v-for="(zoneName, idx) in scanData.overallAnalysis.priorityOrder.slice(0,3)"
-							:key="zoneName"
-							class="flex items-center justify-between rounded-xl border border-slate-200 bg-white/70 px-3 py-2"
-						>
-							<div class="flex items-center gap-2">
-								<span
-									class="w-6 h-6 rounded-full grid place-items-center text-xs font-bold"
-									:class="priorityColors[idx] || 'bg-slate-200 text-slate-800'"
-								>
-									{{ idx + 1 }}
-								</span>
-								<span class="text-sm font-medium">{{ zoneName }} часть</span>
-							</div>
-							<span class="text-sm text-slate-700">
-								{{
-                    (scanData.zones.find(z => z.name === zoneName)?.aiAnalysis.estimatedCost ?? 0) > 0
-                      ? formatCurrency(scanData.zones.find(z => z.name === zoneName)!.aiAnalysis.estimatedCost)
-                      : 'Без затрат'
-								}}
+					<ArrowRight class="size-6 text-slate-700" />
+				</div>
+
+				<!-- Priority with illustrations -->
+				<div class="mt-4 space-y-3">
+					<div
+						v-for="item in priorityTop"
+						:key="item.name"
+						class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 p-3"
+					>
+						<!-- Illustration -->
+						<img
+							:src="item.img"
+							:alt="`${item.name} часть — иллюстрация`"
+							class="size-18 object-contain rounded-xl bg-slate-50 border border-slate-200"
+							@error="onImgError"
+						/>
+
+						<!-- Text -->
+						<div class="flex-1 min-w-0">
+							<p class="text-sm font-semibold truncate">{{ item.name }} часть</p>
+							<span class="text-sm text-slate-700 whitespace-nowrap">
+								{{ item.cost > 0 ? formatCurrency(item.cost) : 'Без затрат' }}
 							</span>
+
+							<!-- Issue chips -->
+							<div class="mt-2 flex flex-wrap items-center gap-1.5">
+								<span
+									v-if="item.breaking"
+									class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-red-50 text-red-700 border border-red-200"
+								>
+									Поломка
+								</span>
+								<span
+									v-if="item.hasRust"
+									class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-orange-50 text-orange-700 border border-orange-200"
+								>
+									Ржавчина
+								</span>
+								<span
+									v-if="item.isDirty"
+									class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200"
+								>
+									Грязь
+								</span>
+							</div>
 						</div>
 					</div>
 				</div>
 
+				<!-- Risk / Total -->
 				<div class="flex items-start justify-between mt-6">
 					<div>
 						<p class="text-xs text-slate-500">Риск</p>
@@ -119,53 +144,6 @@
 					</div>
 				</div>
 			</section>
-
-			<!-- Car Zones (boolean breaking + rust/dirty) -->
-			<section class="rounded-3xl bg-white/60 backdrop-blur-xl border border-slate-200 p-6">
-				<div class="flex items-center justify-between mb-4">
-					<h3 class="text-lg font-semibold tracking-tight">Состояние автомобиля</h3>
-					<div class="flex items-center gap-2 text-slate-600 text-sm">
-						<Car class="w-4 h-4" />
-						<span>4 зоны</span>
-					</div>
-				</div>
-
-				<div class="divide-y divide-slate-200">
-					<div
-						v-for="zone in zonesUi"
-						:key="zone.key"
-						class="flex items-center justify-between py-4"
-					>
-						<div class="flex-1 min-w-0">
-							<h4 class="text-base font-semibold truncate">{{ zone.title }}</h4>
-							<p class="text-sm text-slate-600 truncate">{{ zone.note }}</p>
-
-							<div class="flex items-center gap-2 mt-2">
-								<span
-									v-if="zone.isDirty"
-									class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[11px] font-medium border border-amber-200"
-								>
-									Грязь
-								</span>
-								<span
-									v-if="zone.hasRust"
-									class="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-[11px] font-medium border border-red-200"
-								>
-									Ржавчина
-								</span>
-							</div>
-						</div>
-
-						<RouterLink
-							:to="{ name: 'analysis-details', params: { id: lastScanId } }"
-							class="p-2 rounded-xl hover:bg-white border border-transparent hover:border-slate-200 transition-colors"
-							aria-label="Подробнее"
-						>
-							<ChevronRight class="w-5 h-5 text-slate-400" />
-						</RouterLink>
-					</div>
-				</div>
-			</section>
 		</main>
 
 		<TabBar />
@@ -173,13 +151,20 @@
 </template>
 
 <script setup lang="ts">
-import { Calendar, Car, ChevronDown, ChevronRight, ScanLine } from 'lucide-vue-next';
+import { ArrowRight, Bell, ChevronRight, LogOut, ScanLine } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 
 
 
+import imgFront from '@/core/assets/images/car-front.png';
+import imgLeft from '@/core/assets/images/car-left.png';
+import imgRear from '@/core/assets/images/car-rear.png';
+import imgRight from '@/core/assets/images/car-right.png';
+import imgFallback from '@/core/assets/images/fallback.png';
+import { Avatar, AvatarFallback } from '@/core/components/ui/avatar';
 import { Button } from "@/core/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/core/components/ui/dropdown-menu';
 import TabBar from '@/core/layouts/primary/primary-tabbar.vue';
 
 
@@ -188,6 +173,38 @@ import ReadinessGauge from '../components/home-readiness-gauge.vue';
 
 
 
+
+
+// 2) Map zone name -> image
+const zoneImageMap: Record<'Передняя' | 'Левая' | 'Правая' | 'Задняя', string> = {
+  'Передняя': imgFront,
+  'Левая': imgLeft,
+  'Правая': imgRight,
+  'Задняя': imgRear
+}
+
+const priorityTop = computed(() => {
+  return scanData.overallAnalysis.priorityOrder.slice(0, 3).map((name, index) => {
+    const zone = scanData.zones.find(z => z.name === name)
+    const cost = zone?.aiAnalysis.estimatedCost ?? 0
+    return {
+      index,
+      name,
+	  img: zoneImageMap[name as keyof typeof zoneImageMap],
+      cost,
+      importance: zone?.aiAnalysis.importance ?? '',
+      breaking: zone?.breaking ?? false,
+      hasRust: zone?.hasRust ?? false,
+      isDirty: zone?.isDirty ?? false
+    }
+  })
+})
+
+// 4) Fallback if an image fails to load
+const onImgError = (e: Event) => {
+  const t = e.target as HTMLImageElement
+  if (t && t.src !== imgFallback) t.src = imgFallback
+}
 
 
 /** Demo: latest analysis (same structure as details page) */
@@ -219,8 +236,6 @@ type ScanDetails = {
     riskLevel: Risk
   }
 }
-
-const city = 'Алматы'
 
 // Mock latest scan data (replace with API/store)
 const scanData: ScanDetails = {
@@ -300,57 +315,12 @@ const readinessStatus = computed(() => {
   return { text: 'Критическое состояние', color: 'text-red-600' }
 })
 
-/** Zones UI (map names -> notes, boolean chips) */
-type ZoneUi = {
-  key: 'front' | 'left' | 'right' | 'rear'
-  title: string
-  note: string
-  breaking: boolean
-  hasRust: boolean
-  isDirty: boolean
-}
-const zonesUi = computed<ZoneUi[]>(() => {
-  const notes: Record<ZoneUi['key'], string> = {
-    front: 'капот, бампер, фары',
-    left: 'двери, крылья',
-    right: 'двери, крылья',
-    rear: 'багажник, бампер'
-  }
-  const mapKey = (name: ZoneAnalysis['name']): ZoneUi['key'] =>
-    name === 'Передняя' ? 'front' : name === 'Левая' ? 'left' : name === 'Правая' ? 'right' : 'rear'
-
-  return scanData.zones.map(z => {
-    const key = mapKey(z.name)
-    return {
-      key,
-      title: z.name,
-      note: notes[key],
-      breaking: z.breaking,
-      hasRust: z.hasRust,
-      isDirty: z.isDirty
-    }
-  })
-})
-
-
-/** Priority / Risk helpers */
-const priorityColors = [
-  'bg-red-100 text-red-800',
-  'bg-amber-100 text-amber-800',
-  'bg-primary text-primary-foreground',
-  'bg-slate-200 text-slate-800'
-]
 const riskColor = (r: Risk) => (r === 'high' ? 'text-red-600' : r === 'medium' ? 'text-amber-600' : 'text-primary')
 const riskLabel = (r: Risk) => (r === 'high' ? 'Высокий' : r === 'medium' ? 'Средний' : 'Низкий')
 
 /** Formatters */
 const formatDate = (d: Date) =>
-  d.toLocaleString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  d.toLocaleString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('kk-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(v)
-
-/** Actions */
-const onChangeCity = () => {
-  // open city picker
-}
 </script>

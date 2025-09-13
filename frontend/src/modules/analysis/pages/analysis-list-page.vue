@@ -67,7 +67,7 @@
 			<!-- List -->
 			<div
 				v-else
-				class="space-y-3"
+				class="space-y-2"
 			>
 				<Card
 					v-for="scan in filteredScans"
