@@ -1,0 +1,507 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// New enum for learners’ native language
+enum NATIVE_LANGUAGE {
+  KAZAKH
+  RUSSIAN
+  ENGLISH
+}
+
+/// Admin roles in UPPERCASE
+enum ADMIN_ROLE {
+  ADMIN
+  TEACHER
+  HELPDESK
+}
+
+/// Approval status in UPPERCASE
+enum APPROVAL_STATUS {
+  DRAFT
+  PUBLISHED
+}
+
+enum INTEREST {
+  ART
+  SPORTS
+  TECHNOLOGY
+  BUSINESS
+  TRAVEL
+}
+
+/// Notification related enums
+enum NOTIFICATION_TYPE {
+  ONBOARDING_WELCOME
+  LEVEL_ASSIGNED
+  DAILY_TASK_CREATED
+  DAILY_TASK_COMPLETED
+  DAILY_TASK_INCOMPLETE
+  VOCAB_REVIEW_DUE
+  CHAT_SESSION_COMPLETED
+  CHAT_INACTIVITY_NUDGE
+  FREE_CHAT_NUDGE
+  WEEKLY_SUMMARY
+}
+
+enum NOTIFICATION_CHANNEL {
+  PUSH
+  IN_APP
+}
+
+enum DEVICE_PLATFORM {
+  IOS
+  ANDROID
+}
+
+enum PUSH_PROVIDER {
+  EXPO
+}
+
+/// Notification recipient type (currently only learner is supported)
+enum RECIPIENT_TYPE {
+  LEARNER
+}
+
+/// Notification delivery/read status
+enum NOTIFICATION_STATUS {
+  QUEUED
+  SENT
+  FAILED
+  READ
+}
+
+model Admin {
+  id          Int        @id @default(autoincrement()) @map("id")
+  name        String     @map("name")
+  phoneNumber String     @unique @map("phone_number")
+  role        ADMIN_ROLE @map("role")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at")
+
+  /// One-to-one to OTP
+  otpRequest AdminOtpRequest?
+
+  /// One-to-one to Session
+  session AdminSession?
+
+  @@map("admins")
+}
+
+model Learner {
+  id              Int             @id @default(autoincrement()) @map("id")
+  name            String          @map("name")
+  phoneNumber     String          @unique @map("phone_number")
+  nativeLanguage  NATIVE_LANGUAGE @map("native_language")
+  interests       INTEREST[]      @map("interests")
+  verified        Boolean         @default(false) @map("verified")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @default(now()) @updatedAt @map("updated_at")
+  assignedLevelId Int             @map("assigned_level_id")
+  dailyTimeGoal   Int             @map("daily_time_goal")
+
+  assignedLevel             ProficiencyLevel            @relation(fields: [assignedLevelId], references: [id], onDelete: Cascade)
+  otpRequest                LearnerOtpRequest?
+  session                   LearnerSession?
+  LearnerVocabulary         LearnerVocabulary[]
+  LearnerVocabularyProgress LearnerVocabularyProgress[]
+  DailyTask                 DailyTask[]
+  DeviceToken               DeviceToken[]
+
+  @@map("learners")
+}
+
+model AdminOtpRequest {
+  id          Int      @id @default(autoincrement()) @map("id")
+  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId     Int      @unique @map("admin_id")
+  phoneNumber String   @map("phone_number")
+  otpCode     String   @map("otp_code")
+  createdAt   DateTime @default(now()) @map("created_at")
+  expiresAt   DateTime @map("expires_at")
+
+  @@map("admin_otp_requests")
+}
+
+model LearnerOtpRequest {
+  id          Int      @id @default(autoincrement()) @map("id")
+  learner     Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  learnerId   Int      @unique @map("learner_id")
+  phoneNumber String   @map("phone_number")
+  otpCode     String   @map("otp_code")
+  createdAt   DateTime @default(now()) @map("created_at")
+  expiresAt   DateTime @map("expires_at")
+
+  @@map("learner_otp_requests")
+}
+
+model AdminSession {
+  id        Int      @id @default(autoincrement()) @map("id")
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId   Int      @unique @map("admin_id")
+  token     String   @unique @map("token")
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+
+  @@map("admin_sessions")
+}
+
+model LearnerSession {
+  id        Int      @id @default(autoincrement()) @map("id")
+  learner   Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  learnerId Int      @unique @map("learner_id")
+  token     String   @unique @map("token")
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+
+  @@map("learner_sessions")
+}
+
+enum LEVEL_CODE {
+  A1
+  A2
+  B1
+  B2
+  C1
+}
+
+model ProficiencyLevel {
+  id                 Int                  @id @default(autoincrement()) @map("id")
+  code               LEVEL_CODE           @unique @map("code")
+  title              String               @map("title")
+  description        String               @map("description")
+  modules            Module[]             @relation("ProficiencyModules")
+  AssessmentQuestion AssessmentQuestion[]
+  Learner            Learner[]
+
+  @@map("proficiency_levels")
+}
+
+model AssessmentQuestion {
+  id                            Int                             @id @default(autoincrement()) @map("id")
+  proficiencyLevelId            Int                             @map("proficiency_level_id")
+  question                      String                          @map("question")
+  image_key                     String?                         @map("image_key")
+  createdAt                     DateTime                        @default(now()) @map("created_at")
+  updatedAt                     DateTime                        @updatedAt @map("updated_at")
+  proficiencyLevel              ProficiencyLevel                @relation(fields: [proficiencyLevelId], references: [id], onDelete: Cascade)
+  answers                       AssessmentAnswer[]
+  AssessmentQuestionTranslation AssessmentQuestionTranslation[]
+
+  @@index([proficiencyLevelId])
+  @@map("assessment_questions")
+}
+
+model AssessmentAnswer {
+  id                          Int                           @id @default(autoincrement()) @map("id")
+  questionId                  Int                           @map("question_id")
+  answer                      String                        @map("answer")
+  isCorrect                   Boolean                       @default(false) @map("is_correct")
+  createdAt                   DateTime                      @default(now()) @map("created_at")
+  updatedAt                   DateTime                      @updatedAt @map("updated_at")
+  question                    AssessmentQuestion            @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  AssessmentAnswerTranslation AssessmentAnswerTranslation[]
+
+  @@index([questionId])
+  @@map("assessment_answers")
+}
+
+model Module {
+  id                 Int                @id @default(autoincrement()) @map("id")
+  title              String             @map("title")
+  proficiencyLevelId Int                @map("proficiency_level_id")
+  theoryContent      String             @map("theory_content") @db.Text
+  outcomes           String             @map("outcomes") @db.Text
+  description        String             @map("description")
+  order              Int                @map("order")
+  status             APPROVAL_STATUS    @default(DRAFT) @map("status")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @default(now()) @updatedAt @map("updated_at")
+  proficiencyLevel   ProficiencyLevel   @relation("ProficiencyModules", fields: [proficiencyLevelId], references: [id], onDelete: Cascade)
+  segments           Segment[]
+  ModuleVocabulary   ModuleVocabulary[]
+
+  @@unique([proficiencyLevelId, order])
+  @@map("modules")
+}
+
+model Segment {
+  id                 Int                  @id @default(autoincrement()) @map("id")
+  title              String               @map("title")
+  theoryContent      String               @map("theory_content") @db.Text
+  moduleId           Int                  @map("module_id")
+  order              Int                  @map("order")
+  timeToComplete     Int                  @map("time_to_complete")
+  status             APPROVAL_STATUS      @default(DRAFT) @map("status")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @default(now()) @updatedAt @map("updated_at")
+  module             Module               @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  interestSegments   InterestSegment[]
+  SegmentTranslation SegmentTranslation[]
+
+  @@unique([moduleId, order])
+  @@map("segments")
+}
+
+model InterestSegment {
+  id                         Int                          @id @default(autoincrement()) @map("id")
+  segmentId                  Int                          @map("segment_id")
+  interest                   INTEREST                     @map("interest")
+  theoryContent              String                       @map("theory_content") @db.Text
+  createdAt                  DateTime                     @default(now()) @map("created_at")
+  updatedAt                  DateTime                     @default(now()) @updatedAt @map("updated_at")
+  segment                    Segment                      @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  Exercise                   Exercise[]
+  InterestSegmentTranslation InterestSegmentTranslation[]
+
+  @@map("interest_segments")
+}
+
+/// New enum for all exercise types
+enum EXERCISE_TYPE {
+  FLASHCARD
+  CLOZE
+  SENTENCE_REORDER
+  MULTIPLE_CHOICE
+  DICTATION
+  LISTENING_QUIZ
+  PRONUNCIATION
+  PICTURE_DESCRIPTION
+}
+
+/// Exercises are always scoped to a Segment
+model Exercise {
+  id                Int             @id @default(autoincrement()) @map("id")
+  interestSegmentId Int             @map("interest_segment_id")
+  type              EXERCISE_TYPE   @map("type")
+  status            APPROVAL_STATUS @default(DRAFT) @map("status")
+  title             String          @map("title")
+  payload           Json            @map("payload") @db.JsonB
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  interestSegment     InterestSegment       @relation(fields: [interestSegmentId], references: [id], onDelete: Cascade)
+  ExerciseTranslation ExerciseTranslation[]
+  DailyTaskExercise   DailyTaskExercise[]
+
+  @@index([type]) // to quickly find all e.g. FLASHCARD exercises
+  @@map("exercises")
+}
+
+/// Vocabulary items defined per module
+model ModuleVocabulary {
+  id        Int      @id @default(autoincrement()) @map("id")
+  moduleId  Int      @map("module_id")
+  word      String   @map("word") // Kazakh word
+  example   String?  @map("example") // Kazakh example
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  module       Module                        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  translations ModuleVocabularyTranslation[]
+
+  @@map("module_vocabularies")
+}
+
+model ModuleVocabularyTranslation {
+  id           Int             @id @default(autoincrement())
+  vocabularyId Int             @map("vocabulary_id")
+  language     NATIVE_LANGUAGE @map("language")
+  translation  String          @map("translation")
+  description  String?         @map("description") // New field, made optional
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  vocabulary ModuleVocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+  @@unique([vocabularyId, language])
+  @@map("module_vocabulary_translations")
+}
+
+/// Learner’s own copy of a vocabulary item
+model LearnerVocabulary {
+  id          Int      @id @default(autoincrement()) @map("id")
+  learnerId   Int      @map("learner_id")
+  word        String   @map("word") // Kazakh word
+  translation String   @map("translation") // In learner's native language
+  description String   @map("description") // In learner's native language
+  example     String?  @map("example") // Kazakh example
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  learner                   Learner                     @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  LearnerVocabularyProgress LearnerVocabularyProgress[]
+
+  @@map("learner_vocabularies")
+}
+
+/// Spaced-repetition progress for each LearnerVocabulary
+model LearnerVocabularyProgress {
+  id                  Int      @id @default(autoincrement()) @map("id")
+  learnerVocabularyId Int      @map("learner_vocabulary_id")
+  learnerId           Int      @map("learner_id")
+  masteryLevel        Int      @map("mastery_level")
+  streak              Int      @map("streak")
+  nextReviewAt        DateTime @map("next_review_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  learnerVocabulary LearnerVocabulary @relation(fields: [learnerVocabularyId], references: [id], onDelete: Cascade)
+  learner           Learner           @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@map("learner_vocabulary_progress")
+}
+
+model SegmentTranslation {
+  id            Int             @id @default(autoincrement())
+  segmentId     Int             @map("segment_id")
+  language      NATIVE_LANGUAGE @map("language")
+  title         String          @map("title")
+  theoryContent String          @map("theory_content") @db.Text
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  segment Segment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+
+  @@unique([segmentId, language])
+  @@index([segmentId])
+  @@index([language])
+  @@map("segment_translations")
+}
+
+model InterestSegmentTranslation {
+  id                Int             @id @default(autoincrement())
+  interestSegmentId Int             @map("interest_segment_id")
+  language          NATIVE_LANGUAGE @map("language")
+  theoryContent     String          @map("theory_content") @db.Text
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  interestSegment InterestSegment @relation(fields: [interestSegmentId], references: [id], onDelete: Cascade)
+
+  @@unique([interestSegmentId, language])
+  @@index([interestSegmentId])
+  @@index([language])
+  @@map("interest_segment_translations")
+}
+
+model ExerciseTranslation {
+  id         Int             @id @default(autoincrement())
+  exerciseId Int             @map("exercise_id")
+  language   NATIVE_LANGUAGE @map("language")
+  title      String          @map("title")
+  payload    Json            @map("payload") @db.JsonB // Translated payload content
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
+
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([exerciseId, language])
+  @@index([exerciseId])
+  @@index([language])
+  @@map("exercise_translations")
+}
+
+model AssessmentQuestionTranslation {
+  id         Int             @id @default(autoincrement())
+  questionId Int             @map("question_id")
+  language   NATIVE_LANGUAGE @map("language")
+  question   String          @map("question")
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
+
+  assessmentQuestion AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, language])
+  @@index([questionId])
+  @@index([language])
+  @@map("assessment_question_translations")
+}
+
+model AssessmentAnswerTranslation {
+  id        Int             @id @default(autoincrement())
+  answerId  Int             @map("answer_id")
+  language  NATIVE_LANGUAGE @map("language")
+  answer    String          @map("answer")
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  assessmentAnswer AssessmentAnswer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+
+  @@unique([answerId, language])
+  @@index([answerId])
+  @@index([language])
+  @@map("assessment_answer_translations")
+}
+
+model DailyTask {
+  id        Int      @id @default(autoincrement()) @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  learnerId Int      @map("learner_id")
+  completed Boolean  @default(false) @map("completed")
+
+  learner   Learner             @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  exercises DailyTaskExercise[]
+
+  @@map("daily_tasks")
+}
+
+model DailyTaskExercise {
+  id          Int     @id @default(autoincrement()) @map("id")
+  exerciseId  Int     @map("exercise_id")
+  dailyTaskId Int     @map("daily_task_id")
+  completed   Boolean @default(false) @map("completed")
+
+  exercise  Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  dailyTask DailyTask @relation(fields: [dailyTaskId], references: [id], onDelete: Cascade)
+
+  @@map("daily_task_exercises")
+}
+
+/// Registered device tokens for push notifications
+model DeviceToken {
+  id         Int            @id @default(autoincrement()) @map("id")
+  learnerId  Int?           @map("learner_id")
+  token      String         @unique @map("token")
+  provider   PUSH_PROVIDER  @default(EXPO) @map("provider")
+  platform   DEVICE_PLATFORM @map("platform")
+  locale     String?        @map("locale")
+  timezone   String?        @map("timezone")
+  isActive   Boolean        @default(true) @map("is_active")
+  lastActiveAt DateTime?    @map("last_active_at")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @default(now()) @updatedAt @map("updated_at")
+
+  learner    Learner?       @relation(fields: [learnerId], references: [id], onDelete: SetNull)
+
+  @@map("device_tokens")
+}
+
+/// Persisted notifications for in-app feed and delivery tracking
+model Notification {
+  id            Int                 @id @default(autoincrement()) @map("id")
+  recipientId   Int                 @map("recipient_id")
+  recipientType RECIPIENT_TYPE      @default(LEARNER) @map("recipient_type")
+  type          NOTIFICATION_TYPE   @map("type")
+  title         String              @map("title")
+  body          String              @map("body")
+  data          Json?               @map("data") @db.JsonB
+  deepLink      String?             @map("deep_link")
+  channel       NOTIFICATION_CHANNEL @default(IN_APP) @map("channel")
+  scheduledAt   DateTime?           @map("scheduled_at")
+  sentAt        DateTime?           @map("sent_at")
+  readAt        DateTime?           @map("read_at")
+  status        NOTIFICATION_STATUS @default(QUEUED) @map("status")
+  error         String?             @map("error")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  @@index([recipientId])
+  @@index([type])
+  @@map("notifications")
+}
