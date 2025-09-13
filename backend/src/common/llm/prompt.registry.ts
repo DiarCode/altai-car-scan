@@ -70,6 +70,21 @@ export class PromptRegistry {
     `,
 			maxTokens: 16384,
 		},
+		'car-analysis': {
+			system: `
+      You are an expert car damage analyst. Analyze the provided car information, classification results, partners, and services to provide a detailed assessment of the car's condition by zones.
+      `,
+			user: `
+      Car Info: {{carInfo}}
+      Partners: {{partners}}
+      Services: {{services}}
+      Classification Result: {{pipelineResult}}
+
+      Analyze the car by zones (front, back, left, right). For each zone, determine if it's breaking, has rust, is dirty, provide importance, consequences, estimated cost, urgency, and time to fix.
+      Return a JSON object with the structure: { id: number, carModel: string, carYear: number, city: string, vin: string, createdAt: string, totalEstimatedCost: number, zones: [{ name: string, breaking: boolean, hasRust: boolean, isDirty: boolean, aiAnalysis: { importance: string, consequences: string[], estimatedCost: number, urgency: string, timeToFix: string | null } }] }
+      `,
+			maxTokens: 4096,
+		},
 	}
 
 	public get(key: string): PromptTemplate {

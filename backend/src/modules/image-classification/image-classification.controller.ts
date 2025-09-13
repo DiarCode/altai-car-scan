@@ -1,3 +1,7 @@
+import { Get, NotFoundException } from '@nestjs/common'
+import { CarAnalysisDto } from './dtos/car-analysis.dto'
+import { CarAnalysisMapper } from './utils/car-analysis.mapper'
+
 import {
 	Controller,
 	Post,
@@ -56,5 +60,12 @@ export class ImageClassificationController {
 			throw new BadRequestException('Invalid LLM analysis result')
 		}
 		return llmResult
+	}
+
+	@Get('latest')
+	async getLatestAnalysis(@GetCurrentUser() user: UserClaims): Promise<CarAnalysisDto> {
+		const analysis = await this.service.getLatestAnalysis(user.id)
+		if (!analysis) throw new NotFoundException('No analysis found')
+		return CarAnalysisMapper.toDto(analysis)
 	}
 }
