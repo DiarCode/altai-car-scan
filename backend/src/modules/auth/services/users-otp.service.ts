@@ -1,4 +1,4 @@
-// src/modules/auth/learner/services/learner-otp.service.ts
+// src/modules/auth/user/services/user-otp.service.ts
 
 import { Injectable, BadRequestException, Logger } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
@@ -19,15 +19,19 @@ export class UsersOtpService {
 	) {}
 
 	/**
-	 * Upsert learner by phone (with placeholder name + empty interests),
-	 * then generate & send OTP. Returns learnerId.
+	 * Upsert user by phone (with placeholder name + empty interests),
+	 * then generate & send OTP. Returns userId.
 	 */
-	async generateLearnerOtp(phone: string): Promise<number> {
+	async generateUserOtp(phone: string): Promise<number> {
 		const placeholderName = `user-${randomUUID()}`
 
-		const learner = await this.prisma.users.upsert({
+		const user = await this.prisma.user.upsert({
 			where: { phoneNumber: phone },
 			create: {
+				name: placeholderName,
+				phoneNumber: phone,
+			},
+			update: {
 				name: placeholderName,
 				phoneNumber: phone,
 			},
@@ -38,13 +42,13 @@ export class UsersOtpService {
 		const expires = addMinutes(new Date(), this.TTL_MINUTES)
 		const hashed = await hashOtp(code)
 
-		const otpRecord = await this.prisma.usersOTPRequests.upsert({
-			where: { userId: learner.id },
+		const otpRecord = await this.prisma.usersOTPRequest.upsert({
+			where: { userId: user.id },
 			create: {
-				userId: learner.id,
+				userId: user.id,
 				phoneNumber: phone,
 				otpCode: hashed,
-				expiresAt: expires,	
+				expiresAt: expires,
 			},
 			update: {
 				otpCode: hashed,
@@ -53,20 +57,20 @@ export class UsersOtpService {
 			},
 		})
 
-		await this.prisma.users.update({
-			where: { id: learner.id },
+		await this.prisma.user.update({
+			where: { id: user.id },
 			data: { otpRequest: { connect: { id: otpRecord.id } } },
 		})
 
 		// await this.whatsapp.sendOtp(phone, code)
-		return learner.id
+		return user.id
 	}
 
 	/**
 	 * Validate the OTP
 	 */
 	async validateUserOtp(userId: number, code: string): Promise<void> {
-		const record = await this.prisma.usersOTPRequests.findFirst({
+		const record = await this.prisma.usersOTPRequest.findFirst({
 			where: { userId, expiresAt: { gt: new Date() } },
 			orderBy: { createdAt: 'desc' },
 		})
@@ -77,9 +81,9 @@ export class UsersOtpService {
 
 	@Cron(CronExpression.EVERY_MINUTE)
 	async cleanupExpiredOtps() {
-		const result = await this.prisma.usersOTPRequests.deleteMany({
+		const result = await this.prisma.usersOTPRequest.deleteMany({
 			where: { expiresAt: { lt: new Date() } },
 		})
-		this.logger.debug(`Purged ${result.count} expired learner OTP(s)`)
+		this.logger.debug(`Purged ${result.count} expired user OTP(s)`)
 	}
 }

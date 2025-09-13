@@ -7,23 +7,28 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Users {
-  id              Int             @id @default(autoincrement()) @map("id")
-  name            String          @map("name")
-  phoneNumber     String          @unique @map("phone_number")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @default(now()) @updatedAt @map("updated_at")
+model User {
+  id          Int      @id @default(autoincrement()) @map("id")
+  name        String   @map("name")
+  phoneNumber String   @unique @map("phone_number")
+  carModel    String?  @map("car_model")
+  carYear     Int?     @map("car_year")
+  carColor    String?  @map("car_color")
+  vinNumber   String?  @map("vin_number")
+  city        String?  @map("city")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
-  otpRequest                UsersOTPRequests?
-  session                   UsersSession?
+  otpRequest UsersOTPRequest?
+  session    UsersSession?
 
   @@map("users")
 }
 
-model UsersOTPRequests {
+model UsersOTPRequest {
   id          Int      @id @default(autoincrement()) @map("id")
-  user       Users  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     Int      @unique @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      Int      @unique @map("user_id")
   phoneNumber String   @map("phone_number")
   otpCode     String   @map("otp_code")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -34,8 +39,8 @@ model UsersOTPRequests {
 
 model UsersSession {
   id        Int      @id @default(autoincrement()) @map("id")
-  user     Users  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId   Int      @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int      @unique @map("user_id")
   token     String   @unique @map("token")
   createdAt DateTime @default(now()) @map("created_at")
   expiresAt DateTime @map("expires_at")

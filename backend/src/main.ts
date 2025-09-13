@@ -17,10 +17,10 @@ async function bootstrap() {
 	app.use(cookieParser())
 
 	const config = new DocumentBuilder()
-		.setTitle('ITutor API')
-		.setDescription('iTutor API Documentation')
+		.setTitle('altai-carscan API')
+		.setDescription('altai-carscan API Documentation')
 		.setVersion('1.0')
-		.addTag('itutor')
+		.addTag('altai-carscan')
 		.build()
 	const documentFactory = () => SwaggerModule.createDocument(app, config)
 	SwaggerModule.setup('api', app, documentFactory)

@@ -1,4 +1,4 @@
-// src/modules/auth/learner/services/learner-session.service.ts
+// src/modules/auth/user/services/user-session.service.ts
 
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
@@ -14,43 +14,43 @@ export class UsersSessionService {
 		private readonly config: AppConfigService,
 	) {}
 
-	private async linkSessionToLearner(learnerId: number, sessionId: number): Promise<void> {
-		await this.prisma.users.update({
-			where: { id: learnerId },
+	private async linkSessionToUser(userId: number, sessionId: number): Promise<void> {
+		await this.prisma.user.update({
+			where: { id: userId },
 			data: { session: { connect: { id: sessionId } } },
 		})
 	}
 
 	/** Issue or refresh a JWT session */
-	async upsertSession(learnerId: number): Promise<string> {
+	async upsertSession(userId: number): Promise<string> {
 		const now = new Date()
 		const expiresAt = parseExpirationDate(this.config.userJwt.expiresIn, now)
 		const existing = await this.prisma.usersSession.findUnique({
-			where: { learnerId },
+			where: { userId },
 		})
-		const token = this.jwtService.signLearner({ learnerId })
+		const token = this.jwtService.signUser({ userId })
 
 		if (existing) {
 			const updated = await this.prisma.usersSession.update({
 				where: { id: existing.id },
 				data: { token, expiresAt },
 			})
-			await this.linkSessionToLearner(learnerId, updated.id)
+			await this.linkSessionToUser(userId, updated.id)
 			return updated.token
 		}
 
 		const created = await this.prisma.usersSession.create({
-			data: { learnerId, token, expiresAt },
+			data: { userId, token, expiresAt },
 		})
-		await this.linkSessionToLearner(learnerId, created.id)
+		await this.linkSessionToUser(userId, created.id)
 		return created.token
 	}
 
 	/** Validate JWT + DB session */
-	async validateLearnerSession(token: string): Promise<number> {
-		let payload: { learnerId: number }
+	async validateUserSession(token: string): Promise<number> {
+		let payload: { userId: number }
 		try {
-			payload = this.jwtService.verifyLearner(token)
+			payload = this.jwtService.verifyUser(token)
 		} catch {
 			throw new UnauthorizedException('Invalid or expired token')
 		}
@@ -59,11 +59,11 @@ export class UsersSessionService {
 			where: { token, expiresAt: { gt: new Date() } },
 		})
 		if (!session) throw new UnauthorizedException('Session revoked or expired')
-		return payload.learnerId
+		return payload.userId
 	}
 
 	/** Revoke the session */
-	async revokeLearnerSession(token: string): Promise<void> {
+	async revokeUserSession(token: string): Promise<void> {
 		await this.prisma.usersSession.deleteMany({ where: { token } })
 	}
 }

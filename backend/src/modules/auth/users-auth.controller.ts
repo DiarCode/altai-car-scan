@@ -1,4 +1,4 @@
-// src/modules/auth/learner/learner-auth.controller.ts
+// src/modules/auth/user/user-auth.controller.ts
 
 import { Controller, Post, Body, Req, Res, UseGuards, Get } from '@nestjs/common'
 import { Request, Response } from 'express'
@@ -8,14 +8,15 @@ import { parseExpirationDate } from 'src/common/utils/expiration.util'
 import { UsersAuthGuard } from 'src/common/guards/users-auth.guard'
 import { GetCurrentUser } from 'src/common/decorators/get-current-users.decorator'
 import {
-	RequestLearnerOtpDto,
-	VerifyLearnerOtpDto,
-	LearnerDto,
+	RequestOtpDto,
+	VerifyUserOtpDto,
+	UserDto,
 	SuccessVerifyOtpResponse,
+	SignUpDto,
 } from './dtos/users-auth.dtos'
 import { UsersOtpService } from './services/users-otp.service'
 import { UsersSessionService } from './services/users-session.service'
-import { LearnerClaims } from 'src/common/types/learner-request.interface'
+import { UserClaims } from 'src/common/types/user-request.interface'
 import { ApiResponse } from '@nestjs/swagger'
 import { UsersProfileService } from './services/users-profile.service'
 
@@ -29,14 +30,14 @@ export class UsersAuthController {
 		private readonly profile: UsersProfileService,
 	) {}
 
-	/** 1) Request OTP (upserts placeholder learner) */
+	/** 1) Request OTP (upserts placeholder user) */
 	@Post('otp/request')
 	@ApiResponse({
 		status: 200,
 		description: 'OTP requested successfully',
 	})
-	async requestOtp(@Body() dto: RequestLearnerOtpDto) {
-		await this.otp.generateLearnerOtp(dto.phoneNumber)
+	async requestOtp(@Body() dto: RequestOtpDto) {
+		await this.otp.generateUserOtp(dto.phoneNumber)
 		return
 	}
 
@@ -50,11 +51,11 @@ export class UsersAuthController {
 		description: 'OTP verified successfully, session created',
 	})
 	async verifyOtp(
-		@Body() dto: VerifyLearnerOtpDto,
+		@Body() dto: VerifyUserOtpDto,
 		@Req() req: Request,
 		@Res({ passthrough: true }) res: Response,
 	) {
-		const { id, verified } = await this.profile.findByPhone(dto.phoneNumber)
+		const { id } = await this.profile.findByPhone(dto.phoneNumber)
 		// await this.otp.validateLearnerOtp(id, dto.code)
 
 		const token = await this.sessions.upsertSession(id)
@@ -66,8 +67,18 @@ export class UsersAuthController {
 		return {
 			success: true,
 			expiresIn: Math.floor(maxAgeMs / 1000),
-			isNew: !verified,
 		}
+	}
+
+	@Post('signup')
+	@ApiResponse({
+		status: 200,
+		description: 'User signed up successfully',
+	})
+	async signUp(@Body() dto: SignUpDto) {
+		await this.profile.signUp(dto)
+		await this.otp.generateUserOtp(dto.phoneNumber)
+		return
 	}
 
 	/** 4) Logout */
@@ -80,7 +91,7 @@ export class UsersAuthController {
 	async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
 		const token = this.cookies.getAuthCookie(req)
 		if (token) {
-			await this.sessions.revokeLearnerSession(token)
+			await this.sessions.revokeUserSession(token)
 			this.cookies.clearAuthCookie(req, res)
 		}
 		return
@@ -91,10 +102,10 @@ export class UsersAuthController {
 	@UseGuards(UsersAuthGuard)
 	@ApiResponse({
 		status: 200,
-		type: LearnerDto,
-		description: 'Returns current learner profile',
+		type: UserDto,
+		description: 'Returns current user profile',
 	})
-	async me(@GetCurrentUser() learner: LearnerClaims): Promise<LearnerDto> {
-		return this.profile.getById(learner.id)
+	async me(@GetCurrentUser() user: UserClaims): Promise<UserDto> {
+		return this.profile.getById(user.id)
 	}
 }

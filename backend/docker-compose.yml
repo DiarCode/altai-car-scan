@@ -1,6 +1,6 @@
 services:
   postgres:
-    container_name: itutor-postgres
+    container_name: altai-carscan-postgres
     image: postgres:latest
     restart: unless-stopped
     ports:
@@ -15,7 +15,7 @@ services:
       - ./.env
 
   pgadmin:
-    container_name: itutor-pgadmin
+    container_name: altai-carscan-pgadmin
     image: dpage/pgadmin4
     depends_on:
       - postgres
@@ -29,7 +29,7 @@ services:
       - ./.env
 
   minio:
-    container_name: itutor-minio
+    container_name: altai-carscan-minio
     image: minio/minio:RELEASE.2025-02-18T16-25-55Z
     ports:
       - '9000:9000' # S3 API

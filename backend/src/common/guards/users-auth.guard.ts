@@ -1,8 +1,8 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common'
-import { UsersSessionService } from 'src/modules/auth/users/services/users-session.service'
+import { UsersSessionService } from 'src/modules/auth/services/users-session.service'
 import { CookieService } from '../services/cookie.service'
 import { PrismaService } from 'src/prisma/prisma.service'
-import { LearnerRequest } from '../types/learner-request.interface'
+import { UserRequest } from '../types/user-request.interface'
 
 @Injectable()
 export class UsersAuthGuard implements CanActivate {
@@ -13,25 +13,18 @@ export class UsersAuthGuard implements CanActivate {
 	) {}
 
 	async canActivate(ctx: ExecutionContext): Promise<boolean> {
-		const req = ctx.switchToHttp().getRequest<LearnerRequest>()
+		const req = ctx.switchToHttp().getRequest<UserRequest>()
 		const token = this.cookieService.getAuthCookie(req)
 		if (!token) throw new UnauthorizedException('Authentication token missing')
 
-		const learnerId = await this.sessions.validateLearnerSession(token)
+		const userId = await this.sessions.validateUserSession(token)
 
-		// Fetch learner's native language
-		const learner = await this.prisma.learner.findUnique({
-			where: { id: learnerId },
-			select: { nativeLanguage: true },
-		})
-
-		if (!learner) {
+		if (!userId) {
 			throw new UnauthorizedException('Learner not found')
 		}
 
-		req.learner = {
-			id: learnerId,
-			nativeLanguage: learner.nativeLanguage,
+		req.user = {
+			id: userId,
 		}
 
 		return true
