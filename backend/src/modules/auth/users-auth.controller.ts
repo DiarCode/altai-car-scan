@@ -30,7 +30,7 @@ export class UsersAuthController {
 		private readonly profile: UsersProfileService,
 	) {}
 
-	/** 1) Request OTP (upserts placeholder user) */
+	/** 1) Request OTP for login (requires existing user) */
 	@Post('otp/request')
 	@ApiResponse({
 		status: 200,
@@ -38,7 +38,7 @@ export class UsersAuthController {
 	})
 	async requestOtp(@Body() dto: RequestOtpDto) {
 		await this.profile.findByPhone(dto.phoneNumber)
-		await this.otp.generateUserOtp(dto.phoneNumber)
+		await this.otp.generateExistingUserOtp(dto.phoneNumber)
 		return
 	}
 
@@ -78,7 +78,7 @@ export class UsersAuthController {
 	})
 	async signUp(@Body() dto: SignUpDto) {
 		await this.profile.signUp(dto)
-		await this.otp.generateUserOtp(dto.phoneNumber)
+		await this.otp.generateExistingUserOtp(dto.phoneNumber)
 		return
 	}
 

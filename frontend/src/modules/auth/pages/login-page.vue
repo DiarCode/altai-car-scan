@@ -109,6 +109,12 @@ onUnmounted(() => {
 // Reset form when component mounts
 onMounted(() => {
 	authState.resetForm()
+	
+	// Check if phone number is provided from registration redirect
+	const queryPhone = router.currentRoute.value.query.phone as string
+	if (queryPhone) {
+		phoneNumber.value = queryPhone
+	}
 })
 </script>
 
@@ -179,7 +185,7 @@ onMounted(() => {
 					</p>
 					<button
 						@click="authState.loginState.step = 'phone'"
-						class="text-primary text-sm hover:underline"
+						class="text-lime-600 text-sm hover:underline"
 					>
 						Изменить номер
 					</button>
@@ -243,8 +249,8 @@ onMounted(() => {
 			</div>
 		</div>
 		
-		<!-- Footer -->
-		<div class="px-6 pb-6 text-center">
+		<!-- Footer - Only show registration link during phone step -->
+		<div v-if="authState.loginState.step === 'phone'" class="px-6 pb-6 text-center">
 			<p class="text-sm text-muted-foreground">
 				Нет аккаунта?
 				<button @click="goToRegister" class="text-lime-600 hover:underline">

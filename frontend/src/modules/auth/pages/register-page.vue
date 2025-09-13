@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/use-auth.composable'
 import { KAZAKHSTAN_CITIES } from '../constants/cities.constants'
 import AppInput from '../components/app-input.vue'
 import AppButton from '../components/app-button.vue'
 import AppSelect from '../components/app-select.vue'
-import OtpInput from '../components/otp-input.vue'
 
 const router = useRouter()
 const authState = useAuth()
-
-const resendTimer = ref(0)
-let resendInterval: NodeJS.Timeout | null = null
 
 const currentYear = new Date().getFullYear()
 
@@ -142,61 +138,15 @@ const handleVinInput = (value: string | number) => {
 
 const handleRegister = async () => {
 	await authState.register()
-	if (authState.registerState.step === 'otp') {
-		startResendTimer()
-	}
-}
-
-const handleOtpVerification = async () => {
-	await authState.verifyOtp(authState.registerState.phoneNumber, authState.otpCode.value)
-}
-
-const handleOtpComplete = async (otp: string) => {
-	if (otp.length === 4) {
-		await authState.verifyOtp(authState.registerState.phoneNumber, otp)
-	}
-}
-
-const resendCode = async () => {
-	if (resendTimer.value > 0) return
-	
-	await authState.register()
-	startResendTimer()
-}
-
-const startResendTimer = () => {
-	resendTimer.value = 60
-	resendInterval = setInterval(() => {
-		resendTimer.value--
-		if (resendTimer.value <= 0) {
-			if (resendInterval) {
-				clearInterval(resendInterval)
-				resendInterval = null
-			}
-		}
-	}, 1000)
 }
 
 const goBack = () => {
-	if (authState.registerState.step === 'otp') {
-		authState.registerState.step = 'form'
-		authState.otpCode.value = ''
-		authState.error.value = null
-	} else {
-		router.push('/welcome')
-	}
+	router.push('/welcome')
 }
 
 const goToLogin = () => {
 	router.push('/auth/login')
 }
-
-// Cleanup
-onUnmounted(() => {
-	if (resendInterval) {
-		clearInterval(resendInterval)
-	}
-})
 
 // Reset form when component mounts
 onMounted(() => {
@@ -222,8 +172,8 @@ onMounted(() => {
 		
 		<!-- Content -->
 		<div class="flex-1 px-6 py-8">
-			<!-- Registration Form Step -->
-			<div v-if="authState.registerState.step === 'form'" class="space-y-6">
+			<!-- Registration Form -->
+			<div class="space-y-6">
 				<div class="text-center">
 					<h2 class="text-2xl font-bold text-foreground mb-2">
 						Создать аккаунт
@@ -329,62 +279,6 @@ onMounted(() => {
 				</form>
 			</div>
 			
-			<!-- OTP Step -->
-			<div v-else class="space-y-6">
-				<div class="text-center">
-					<h2 class="text-2xl font-bold text-foreground mb-2">
-						Подтверждение
-					</h2>
-					<p class="text-muted-foreground mb-4">
-						Введите код, отправленный на номер<br>
-						<span class="font-medium text-foreground">{{ authState.registerState.phoneNumber }}</span>
-					</p>
-					<button
-						@click="authState.registerState.step = 'form'"
-						class="text-primary text-sm hover:underline"
-					>
-						Изменить данные
-					</button>
-				</div>
-				
-				<form @submit.prevent="handleOtpVerification" class="space-y-6">
-					<div class="space-y-4">
-						<label class="block text-sm font-medium text-foreground text-center">
-							Код подтверждения
-						</label>
-						<otp-input
-							v-model="authState.otpCode.value"
-							:length="4"
-							@complete="handleOtpComplete"
-						/>
-						<p v-if="authState.error.value" class="text-sm text-destructive text-center">
-							{{ authState.error.value }}
-						</p>
-					</div>
-					
-					<app-button
-						type="submit"
-						:loading="authState.isLoading.value"
-						:disabled="authState.otpCode.value.length !== 4"
-						full-width
-						size="lg"
-					>
-						Завершить регистрацию
-					</app-button>
-					
-					<div class="text-center">
-						<button
-							type="button"
-							@click="resendCode"
-							:disabled="resendTimer > 0"
-							class="text-sm text-muted-foreground hover:text-primary disabled:opacity-50"
-						>
-							{{ resendTimer > 0 ? `Отправить повторно через ${resendTimer}с` : 'Отправить код повторно' }}
-						</button>
-					</div>
-				</form>
-			</div>
-			
 			<!-- Info Section -->
 			<div class="mt-8 p-4 bg-card rounded-lg border border-border">
 				<div class="flex items-start space-x-3">
@@ -395,10 +289,10 @@ onMounted(() => {
 					</div>
 					<div>
 						<h3 class="text-sm font-medium text-foreground mb-1">
-							Для демонстрации
+							После регистрации
 						</h3>
 						<p class="text-xs text-muted-foreground">
-							Используйте код <span class="font-mono bg-muted px-1 rounded">1111</span> для подтверждения
+							Вы будете перенаправлены на страницу входа для авторизации
 						</p>
 					</div>
 				</div>
