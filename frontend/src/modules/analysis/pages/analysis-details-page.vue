@@ -26,7 +26,7 @@
 				</div>
 
 				<!-- Main row -->
-				<div class="items-start gap-4 grid grid-cols-[1fr_auto] mt-4">
+				<div class="space-y-2 mt-4">
 					<div>
 						<div class="font-semibold text-xl leading-tight">
 							<template v-if="isLoading">
@@ -180,37 +180,35 @@
 							<AccordionContent>
 								<Separator />
 								<div class="space-y-4 px-4 pt-4 pb-4">
-									<!-- Issues chips -->
-									<div v-if="zone.breaking || zone.hasRust || zone.isDirty">
-										<div class="flex flex-wrap gap-2">
-											<Badge
-												v-if="zone.breaking"
-												variant="outline"
-												class="bg-red-50 border-red-200 text-red-700"
-											>
-												<AlertTriangle class="mr-1 w-4 h-4" /> Поломка
-											</Badge>
-											<Badge
-												v-if="zone.hasRust"
-												variant="outline"
-												class="bg-orange-50 border-orange-200 text-orange-700"
-											>
-												Ржавчина
-											</Badge>
-											<Badge
-												v-if="zone.isDirty"
-												variant="outline"
-												class="bg-slate-50 border-slate-200 text-slate-700"
-											>
-												Загрязнение
-											</Badge>
+									<!-- AI analysis -->
+									<div class="flex items-center gap-2 flex-wrap">
+										<div class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-full">
+											<p class="text-slate-500 text-sm">
+												{{ IMPORTANCE_LABELS[zone.aiAnalysis.importance] }}
+											</p>
+										</div>
+
+										<div
+											v-if="zone.breaking"
+											class="px-3 py-2 rounded-full bg-red-50 border border-red-200"
+										>
+											<p class="text-red-500 text-sm">Поломка</p>
+										</div>
+
+										<div
+											v-if="zone.hasRust"
+											class="px-3 py-2 rounded-full bg-amber-50 border border-amber-200"
+										>
+											<p class="text-amber-500 text-sm">Ржавчина</p>
+										</div>
+
+										<div
+											v-if="zone.isDirty"
+											class="px-3 py-2 rounded-full bg-blue-50 border border-blue-200"
+										>
+											<p class="text-blue-500 text-sm">Загрязнение</p>
 										</div>
 									</div>
-
-									<!-- AI analysis -->
-									<p class="text-slate-700 text-sm">
-										{{ zone.aiAnalysis.importance }}
-									</p>
 
 									<Card
 										v-if="zone.aiAnalysis.consequences.length"
@@ -452,7 +450,6 @@ import rightBreak from '@/core/assets/zones/right_break.png';
 import rightOk from '@/core/assets/zones/right_ok.png';
 import rightWarn from '@/core/assets/zones/right_warn.png';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/core/components/ui/accordion';
-import { Badge } from '@/core/components/ui/badge';
 import { Button } from '@/core/components/ui/button';
 import { Card, CardContent } from '@/core/components/ui/card';
 import { Separator } from '@/core/components/ui/separator';
@@ -463,7 +460,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/core/components/ui/t
 
 /* data composable */
 import { useAnalysis } from '@/modules/analysis/composables/analysis.composables';
-import { type CarAnalysisDto, CarStatus } from '@/modules/analysis/models/analysis.models';
+import { type CarAnalysisDto, CarStatus, IMPORTANCE_LABELS } from '@/modules/analysis/models/analysis.models';
 
 
 

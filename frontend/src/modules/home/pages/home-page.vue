@@ -6,11 +6,19 @@ import { RouterLink, useRouter } from 'vue-router';
 
 
 /* assets */
-import imgFront from '@/core/assets/images/car-front.png';
-import imgLeft from '@/core/assets/images/car-left.png';
-import imgRear from '@/core/assets/images/car-rear.png';
-import imgRight from '@/core/assets/images/car-right.png';
 import imgFallback from '@/core/assets/images/fallback.png';
+import frontBreak from '@/core/assets/zones/front_break.png';
+import frontOk from '@/core/assets/zones/front_ok.png';
+import frontWarn from '@/core/assets/zones/front_warn.png';
+import leftBreak from '@/core/assets/zones/left_break.png';
+import leftOk from '@/core/assets/zones/left_ok.png';
+import leftWarn from '@/core/assets/zones/left_warn.png';
+import rearBreak from '@/core/assets/zones/rear_break.png';
+import rearOk from '@/core/assets/zones/rear_ok.png';
+import rearWarn from '@/core/assets/zones/rear_warn.png';
+import rightBreak from '@/core/assets/zones/right_break.png';
+import rightOk from '@/core/assets/zones/right_ok.png';
+import rightWarn from '@/core/assets/zones/right_warn.png';
 /* shadcn/ui */
 import { Avatar, AvatarFallback } from '@/core/components/ui/avatar';
 import { Button } from '@/core/components/ui/button';
@@ -34,6 +42,18 @@ import ReadinessGauge from '../components/home-readiness-gauge.vue';
 
 
 
+
+
+type ZoneKey = 'FRONT' | 'LEFT' | 'RIGHT' | 'BACK'
+
+
+
+const zoneStateImageMap: Record<ZoneKey, Record<ZoneState, string>> = {
+    FRONT: { ok: frontOk, warn: frontWarn, break: frontBreak },
+    LEFT:  { ok: leftOk,  warn: leftWarn,  break: leftBreak  },
+    RIGHT: { ok: rightOk, warn: rightWarn, break: rightBreak },
+    BACK:  { ok: rearOk,  warn: rearWarn,  break: rearBreak  }
+  }
 
 
 const router = useRouter()
@@ -120,7 +140,6 @@ const readinessStatus = computed(() => {
 })
 
 /* zone name + image mapping (supports enum or ru label) */
-type ZoneKey = 'FRONT' | 'LEFT' | 'RIGHT' | 'BACK'
 const zoneKey = (name: CarAnalysisZoneDto['name'] | string): ZoneKey | undefined => {
   const n = String(name).toUpperCase()
   if (['FRONT', 'ПЕРЕДНЯЯ'].includes(n)) return 'FRONT'
@@ -137,15 +156,28 @@ const zoneLabelRu = (k: ZoneKey | undefined) =>
   : k === 'BACK' ? 'Задняя'
   : 'Зона'
 
-const zoneImageMap: Record<ZoneKey, string> = {
-  FRONT: imgFront,
-  LEFT:  imgLeft,
-  RIGHT: imgRight,
-  BACK:  imgRear
-}
-
 /* priority: top 3 zones by: breaking desc, urgency desc, cost desc, rust/dirty desc */
 const urgencyWeight = (u?: string) => (u === 'HIGH' ? 3 : u === 'MEDIUM' ? 2 : 1)
+
+/* img fallback */
+const onImgError = (e: Event) => {
+  const t = e.target as HTMLImageElement
+  if (t && t.src !== imgFallback) t.src = imgFallback
+}
+
+/* formatters */
+const formatCurrency = (v: number) =>
+  new Intl.NumberFormat('kk-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(v)
+
+type ZoneState = 'ok' | 'warn' | 'break'
+
+const zoneState = (z: CarAnalysisDto['zones'][number]): ZoneState =>
+  z.breaking ? 'break' : (z.hasRust || z.isDirty) ? 'warn' : 'ok'
+
+const zoneImg = (name: ZoneKey, st: ZoneState) => {
+  return zoneStateImageMap[name]?.[st] || imgFallback
+}
+
 const priorityTop = computed(() => {
   const zones = analysis.value?.zones ?? []
   const scored = zones
@@ -163,7 +195,7 @@ const priorityTop = computed(() => {
     .slice(0, 3)
     .map(item => ({
       name: zoneLabelRu(item.k),
-      img: item.k ? zoneImageMap[item.k] : imgFallback,
+      img: item.k ? zoneImg(item.k, zoneState(item.z)) : imgFallback,
       cost: item.z.aiAnalysis?.estimatedCost ?? 0,
       breaking: item.z.breaking,
       hasRust: item.z.hasRust,
@@ -171,16 +203,6 @@ const priorityTop = computed(() => {
     }))
   return scored
 })
-
-/* img fallback */
-const onImgError = (e: Event) => {
-  const t = e.target as HTMLImageElement
-  if (t && t.src !== imgFallback) t.src = imgFallback
-}
-
-/* formatters */
-const formatCurrency = (v: number) =>
-  new Intl.NumberFormat('kk-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(v)
 </script>
 
 <template>
@@ -328,7 +350,13 @@ const formatCurrency = (v: number) =>
 						/>
 					</div>
 
-					<ArrowRight class="size-6 text-slate-700" />
+					<Button
+						@click="$router.push({ name: 'analysis-details', params: { id: String(analysis!.id) } })"
+						size="icon"
+						variant="ghost"
+					>
+						<ArrowRight class="size-6 text-slate-700" />
+					</Button>
 				</div>
 
 				<!-- Skeleton while loading -->

@@ -27,7 +27,7 @@
 			/>
 		</svg>
 		<div class="absolute text-center leading-tight">
-			<div class="text-4xl font-semibold text-slate-900 dark:text-slate-100">{{ value }}</div>
+			<div class="text-3xl font-semibold text-slate-900 dark:text-slate-100">{{ value }}%</div>
 		</div>
 	</div>
 </template>

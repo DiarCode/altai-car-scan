@@ -34,6 +34,12 @@ export enum IMPORTANCE {
 	MINOR = 'MINOR',
 }
 
+export const IMPORTANCE_LABELS: Record<IMPORTANCE, string> = {
+	[IMPORTANCE.CRITICAL]: 'Критично',
+	[IMPORTANCE.MODERATE]: 'Умеренно',
+	[IMPORTANCE.MINOR]: 'Незначительно',
+}
+
 export interface CarAnalysisZoneDto {
 	name: string // server may return "FRONT"/"Передняя" depending on mapping
 	breaking: boolean

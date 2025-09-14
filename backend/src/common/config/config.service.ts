@@ -20,8 +20,6 @@ export interface WhatsappConfig {
 export interface OpenAIConfig {
 	apiKey: string
 	model: string // chat/completions
-	ttsModel: string // e.g. "tts-1" or "gpt-4o-mini-tts"
-	imageModel: string // e.g. "dall-e-3"
 	maxTokens: number
 }
 
@@ -90,8 +88,6 @@ export class AppConfigService {
 		return {
 			apiKey: this.get<string>('OPENAI_API_KEY'),
 			model: this.get<string>('OPENAI_MODEL', 'gpt-4.1-2025-04-14'),
-			ttsModel: this.get('OPENAI_TTS_MODEL', 'tts-1'),
-			imageModel: this.get('OPENAI_IMAGE_MODEL', 'dall-e-3'),
 			maxTokens: this.get<number>('OPENAI_MAX_TOKENS', 1000),
 		}
 	}

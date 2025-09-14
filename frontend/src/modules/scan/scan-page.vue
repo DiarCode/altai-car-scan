@@ -61,11 +61,6 @@
 						</div>
 
 						<div class="flex items-center gap-3">
-							<img
-								v-if="thumbByZone[z.key]"
-								alt=""
-								class="border border-slate-200 rounded-md w-12 h-9 object-cover"
-							/>
 							<CheckCircle2
 								v-if="capturedKeys.includes(z.key)"
 								class="size-6 text-emerald-600"
@@ -125,20 +120,12 @@
 					class="absolute inset-0 bg-slate-200 w-full h-full object-cover"
 				/>
 
-				<!-- PNG overlay for alignment -->
-				<img
-					v-if="overlaySrc"
-					:src="overlaySrc"
-					alt="overlay"
-					class="absolute inset-0 opacity-85 w-full h-full object-contain pointer-events-none"
-				/>
-
 				<!-- Soft grid (CSS only) -->
 				<div class="absolute inset-0 pointer-events-none">
-					<div class="left-1/3 absolute inset-y-0 bg-primary/15 w-px"></div>
-					<div class="left-2/3 absolute inset-y-0 bg-primary/15 w-px"></div>
-					<div class="top-1/3 absolute inset-x-0 bg-primary/15 h-px"></div>
-					<div class="top-2/3 absolute inset-x-0 bg-primary/15 h-px"></div>
+					<div class="left-1/3 absolute inset-y-0 bg-primary/30 w-px"></div>
+					<div class="left-2/3 absolute inset-y-0 bg-primary/30 w-px"></div>
+					<div class="top-1/3 absolute inset-x-0 bg-primary/30 h-px"></div>
+					<div class="top-2/3 absolute inset-x-0 bg-primary/30 h-px"></div>
 				</div>
 
 				<!-- Tip -->
@@ -293,11 +280,6 @@ import imgFront from '@/core/assets/images/car-front.png';
 import imgLeft from '@/core/assets/images/car-left.png';
 import imgRear from '@/core/assets/images/car-rear.png';
 import imgRight from '@/core/assets/images/car-right.png';
-/* overlays (replace with your assets) */
-import OverlayFront from '@/core/assets/overlays/front.png';
-import OverlayLeft from '@/core/assets/overlays/left.png';
-import OverlayRear from '@/core/assets/overlays/rear.png';
-import OverlayRight from '@/core/assets/overlays/right.png';
 import { Button } from '@/core/components/ui/button';
 
 
@@ -355,16 +337,6 @@ const zones = [
   { key: 'rear',  title: 'Задняя зона',    description: 'Бампер, багажник, фонари', icon: imgRear },
 ] as const
 
-/* Derived */
-const overlaySrc = computed(() => {
-  switch (selectedZone.value) {
-    case 'front': return OverlayFront
-    case 'left':  return OverlayLeft
-    case 'right': return OverlayRight
-    case 'rear':  return OverlayRear
-    default:      return ''
-  }
-})
 
 const currentInstruction = computed(() => {
   switch (selectedZone.value) {
@@ -379,7 +351,6 @@ const currentInstruction = computed(() => {
 const capturedKeys = computed(() => (Object.keys(filesByZone.value) as ZoneKeyUI[]).filter(k => filesByZone.value[k]))
 const capturedCount = computed(() => capturedKeys.value.length)
 const canSubmit = computed(() => capturedCount.value > 0)
-const thumbByZone = computed(() => thumbs.value)
 
 /* Actions */
 function selectZone(z: ZoneKeyUI) {
