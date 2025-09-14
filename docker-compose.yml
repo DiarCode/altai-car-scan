@@ -107,10 +107,8 @@ services:
         # Full connection URL
         DATABASE_URL: ${DATABASE_URL}
         # JWT Authentication
-        ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
-        ADMIN_JWT_EXPIRATION: ${ADMIN_JWT_EXPIRATION}
-        LEARNER_JWT_SECRET: ${LEARNER_JWT_SECRET}
-        LEARNER_JWT_EXPIRATION: ${LEARNER_JWT_EXPIRATION}
+        USERS_JWT_SECRET: ${USERS_JWT_SECRET}
+        USERS_JWT_EXPIRATION: ${USERS_JWT_EXPIRATION}
 
         # Server
         CLIENT_URL: ${CLIENT_URL}
@@ -194,6 +192,7 @@ services:
 ######################################################################
 volumes:
   db_data:
+  minio-data:
 
 ######################################################################
 # Docker Network
