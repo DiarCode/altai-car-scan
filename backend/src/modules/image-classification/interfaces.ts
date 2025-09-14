@@ -1,5 +1,6 @@
 // Interfaces for image-classification module
 // Move all interfaces from service and dtos here for strong typing
+import { CarAnalysis, CarAnalysisZone, IMPORTANCE, URGENCY } from '@prisma/client'
 
 export interface SeverityImage {
 	label: string
@@ -64,8 +65,8 @@ export interface LLMCarAnalysisResult {
 }
 
 // Prisma composite return type helper
-export type CarAnalysisWithZones = import('@prisma/client').CarAnalysis & {
-	zones: import('@prisma/client').CarAnalysisZone[]
+export type CarAnalysisWithZones = CarAnalysis & {
+	zones: CarAnalysisZone[]
 	summary?: string | null
 }
 
@@ -159,4 +160,19 @@ export function ensureUrgency(value: unknown): string {
 export function ensureStatus(value: unknown): string {
 	const v = typeof value === 'string' ? value.toUpperCase() : ''
 	return (STATUS_VALUES as readonly string[]).includes(v) ? v : 'EXCELLENT'
+}
+
+// Strict enum helpers (typed to Prisma enums when imported where needed)
+export function ensureImportanceEnum(value: unknown): IMPORTANCE {
+	const raw = typeof value === 'string' ? value : ''
+	const upper = raw.toUpperCase()
+	const allowed = ['CRITICAL', 'MODERATE', 'MINOR'] as const
+	return (allowed as readonly string[]).includes(upper) ? (upper as IMPORTANCE) : 'MINOR'
+}
+
+export function ensureUrgencyEnum(value: unknown): URGENCY {
+	const raw = typeof value === 'string' ? value : ''
+	const upper = raw.toUpperCase()
+	const allowed = ['LOW', 'MEDIUM', 'HIGH'] as const
+	return (allowed as readonly string[]).includes(upper) ? (upper as URGENCY) : 'LOW'
 }

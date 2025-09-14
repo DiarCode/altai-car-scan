@@ -1,5 +1,5 @@
 import { CarAnalysisDto } from '../dtos/car-analysis.dto'
-import { CarAnalysisWithZones } from '../interfaces'
+import { CarAnalysisWithZones, ZoneName } from '../interfaces'
 
 export class CarAnalysisMapper {
 	static toDto(model: CarAnalysisWithZones): CarAnalysisDto {
@@ -15,7 +15,7 @@ export class CarAnalysisMapper {
 			status: model.status ?? 'EXCELLENT',
 			summary: model.summary || undefined,
 			zones: (model.zones || []).map(zone => ({
-				name: zone.name,
+				name: zone.name as ZoneName,
 				breaking: zone.breaking,
 				hasRust: zone.hasRust,
 				isDirty: zone.isDirty,
