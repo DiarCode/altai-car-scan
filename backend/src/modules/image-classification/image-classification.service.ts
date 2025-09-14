@@ -114,6 +114,7 @@ export class ImageClassificationService {
 				totalEstimatedCost: llmResult.totalEstimatedCost,
 				overallScore: llmResult.overallScore,
 				status: llmResult.status as CarStatus,
+				summary: llmResult.summary,
 				zones: {
 					create: llmResult.zones.map(z => ({
 						name: z.name,
@@ -134,6 +135,7 @@ export class ImageClassificationService {
 			...llmResult,
 			id: created.id,
 			createdAt: created.createdAt,
+			summary: created.summary || llmResult.summary,
 			zones: created.zones.map(z => ({
 				name: ensureZoneName(z.name),
 				breaking: z.breaking,

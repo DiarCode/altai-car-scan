@@ -59,12 +59,14 @@ export interface LLMCarAnalysisResult {
 	totalEstimatedCost: number
 	overallScore: number // 0-100
 	status: string // mapped to Prisma enum CarStatus
+	summary?: string // 3-5 sentence Russian summary
 	zones: LLMCarZoneAnalysis[]
 }
 
 // Prisma composite return type helper
 export type CarAnalysisWithZones = import('@prisma/client').CarAnalysis & {
 	zones: import('@prisma/client').CarAnalysisZone[]
+	summary?: string | null
 }
 
 // Type guards
@@ -112,6 +114,7 @@ export function isLLMCarAnalysisResultValid(obj: unknown): obj is LLMCarAnalysis
 		candidate.overallScore >= 0 &&
 		candidate.overallScore <= 100 &&
 		typeof candidate.status === 'string' &&
+		(candidate.summary === undefined || typeof candidate.summary === 'string') &&
 		Array.isArray(candidate.zones)
 	)
 }

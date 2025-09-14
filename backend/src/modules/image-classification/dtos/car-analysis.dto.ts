@@ -31,6 +31,7 @@ export class CarAnalysisDto {
 	totalEstimatedCost: number
 	overallScore: number
 	status: string
+	summary?: string
 	zones: CarAnalysisZoneDto[]
 }
 
@@ -45,6 +46,7 @@ export function fromModel(model: CarAnalysisWithZones): CarAnalysisDto {
 		totalEstimatedCost: model.totalEstimatedCost,
 		overallScore: model.overallScore ?? 0,
 		status: model.status ?? 'EXCELLENT',
+		summary: model.summary || undefined,
 		zones: (model.zones || []).map(z =>
 			CarAnalysisZoneDto.fromModel({
 				name: ensureZoneName(z.name),

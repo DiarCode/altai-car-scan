@@ -13,6 +13,7 @@ export class CarAnalysisMapper {
 			totalEstimatedCost: model.totalEstimatedCost,
 			overallScore: model.overallScore ?? 0,
 			status: model.status ?? 'EXCELLENT',
+			summary: model.summary || undefined,
 			zones: (model.zones || []).map(zone => ({
 				name: zone.name,
 				breaking: zone.breaking,

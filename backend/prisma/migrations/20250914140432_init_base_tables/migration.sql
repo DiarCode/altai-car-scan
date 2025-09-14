@@ -22,6 +22,7 @@ CREATE TABLE "CarAnalysis" (
     "totalEstimatedCost" INTEGER NOT NULL,
     "overallScore" INTEGER NOT NULL DEFAULT 0,
     "status" "CarStatus" NOT NULL DEFAULT 'EXCELLENT',
+    "summary" TEXT,
 
     CONSTRAINT "CarAnalysis_pkey" PRIMARY KEY ("id")
 );

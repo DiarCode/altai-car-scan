@@ -25,6 +25,7 @@ export class PromptRegistry {
 		  * urgency: LOW | MEDIUM | HIGH (uppercase)
 		  * status (overall car status): EXCELLENT | COSMETIC_ISSUES | MECHANICAL_SERVICE_NEEDED | CRITICAL_CONDITION (uppercase)
 		- Provide an overallScore (0-100 integer) reflecting the general technical & cosmetic condition (100 = идеально новое, 0 = крайне аварийное состояние).
+		- Provide a concise summary (поле summary) of 3–5 полных предложений на русском, объединяющих ключевые выводы (общая техническая оценка, основные зоны риска, ориентировочная стоимость работ, приоритет срочных действий). Без маркетинговых фраз, только факты.
 		- If a zone has no issues, set breaking=false, hasRust=false, isDirty=false, estimatedCost=0, consequences=[], choose MINOR + LOW unless justification for higher.
 		- estimatedCost values must be realistic for Kazakhstan market (KZT) and sum logically to totalEstimatedCost.
 					`,
@@ -61,6 +62,7 @@ export class PromptRegistry {
 			totalEstimatedCost: number, // tenge
 			overallScore: number, // 0-100
 			status: string, // EXCELLENT | COSMETIC_ISSUES | MECHANICAL_SERVICE_NEEDED | CRITICAL_CONDITION
+			summary: string, // 3-5 sentences Russian summary of state
 			zones: [
 				{
 					name: string, // zone name
