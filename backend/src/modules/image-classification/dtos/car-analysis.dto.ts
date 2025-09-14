@@ -1,5 +1,4 @@
-import { CarAnalysis } from '@prisma/client'
-import { LLMCarZoneAnalysis } from '../interfaces'
+import { LLMCarZoneAnalysis, CarAnalysisWithZones, ensureZoneName } from '../interfaces'
 
 export class CarAnalysisZoneDto {
 	name: string
@@ -35,7 +34,7 @@ export class CarAnalysisDto {
 	zones: CarAnalysisZoneDto[]
 }
 
-export function fromModel(model: CarAnalysis): CarAnalysisDto {
+export function fromModel(model: CarAnalysisWithZones): CarAnalysisDto {
 	return {
 		id: model.id,
 		carModel: model.carModel,
@@ -46,8 +45,20 @@ export function fromModel(model: CarAnalysis): CarAnalysisDto {
 		totalEstimatedCost: model.totalEstimatedCost,
 		overallScore: model.overallScore ?? 0,
 		status: model.status ?? 'EXCELLENT',
-		zones: ((model as CarAnalysis & { zones?: LLMCarZoneAnalysis[] }).zones || []).map(zone =>
-			CarAnalysisZoneDto.fromModel(zone),
+		zones: (model.zones || []).map(z =>
+			CarAnalysisZoneDto.fromModel({
+				name: ensureZoneName(z.name),
+				breaking: z.breaking,
+				hasRust: z.hasRust,
+				isDirty: z.isDirty,
+				aiAnalysis: {
+					importance: z.importance,
+					consequences: z.consequences,
+					estimatedCost: z.estimatedCost,
+					urgency: z.urgency,
+					timeToFix: z.timeToFix,
+				},
+			} as LLMCarZoneAnalysis),
 		),
 	}
 }

@@ -18,11 +18,15 @@ export class PromptRegistry {
 		- Assess the importance, consequences, estimated cost, urgency, and time to fix for each issue.
 		- Ensure your output is accurate, realistic, and useful for both car owners and service professionals.
 		- The content must be on Russian language. Extensive and easy to understand.
-		- You MUST use ONLY the following enum values exactly (uppercase snake case) when populating fields:
-		  * importance: CRITICAL | MODERATE | MINOR
-		  * urgency: LOW | MEDIUM | HIGH
-		  * status (overall car status): EXCELLENT | COSMETIC_ISSUES | MECHANICAL_SERVICE_NEEDED | CRITICAL_CONDITION
+		- STRICT ENUM REQUIREMENTS (любое отклонение запрещено):
+		  * Zones (name): ПЕРЕДНЯЯ ЗОНА НЕ ИСПОЛЬЗУЙ КАПС (use exact cased Russian words ONLY): Передняя | Левая | Правая | Задняя
+		    - Do NOT output English names like front/back/left/right.
+		  * importance: CRITICAL | MODERATE | MINOR (uppercase)
+		  * urgency: LOW | MEDIUM | HIGH (uppercase)
+		  * status (overall car status): EXCELLENT | COSMETIC_ISSUES | MECHANICAL_SERVICE_NEEDED | CRITICAL_CONDITION (uppercase)
 		- Provide an overallScore (0-100 integer) reflecting the general technical & cosmetic condition (100 = идеально новое, 0 = крайне аварийное состояние).
+		- If a zone has no issues, set breaking=false, hasRust=false, isDirty=false, estimatedCost=0, consequences=[], choose MINOR + LOW unless justification for higher.
+		- estimatedCost values must be realistic for Kazakhstan market (KZT) and sum logically to totalEstimatedCost.
 					`,
 			user: `
 		Car Information:

@@ -5,6 +5,10 @@ import {
 	ClassificationPipelineResult,
 	LLMCarAnalysisResult,
 	isClassificationResultValid,
+	ensureZoneName,
+	ensureImportance,
+	ensureUrgency,
+	ensureStatus,
 } from './interfaces'
 import { mapPipelineResultForLLM } from './utils/pipeline-llm.mapper'
 
@@ -77,12 +81,27 @@ export class ImageClassificationService {
 		// Map pipeline result(s) for LLM
 		const mappedPipelineResult = mapPipelineResultForLLM(pipelineResult)
 
-		const llmResult = await this.llmCarAnalysisAdapter.analyze(
+		let llmResult = await this.llmCarAnalysisAdapter.analyze(
 			mappedPipelineResult,
 			userId,
 			carInfo,
 			partners,
 		)
+
+		// Normalize & sanitize enums
+		llmResult = {
+			...llmResult,
+			status: ensureStatus(llmResult.status),
+			zones: llmResult.zones.map(z => ({
+				...z,
+				name: ensureZoneName(z.name),
+				aiAnalysis: {
+					...z.aiAnalysis,
+					importance: ensureImportance(z.aiAnalysis.importance),
+					urgency: ensureUrgency(z.aiAnalysis.urgency),
+				},
+			})),
+		}
 
 		// Save to DB
 		const created = await this.prisma.carAnalysis.create({
@@ -116,15 +135,15 @@ export class ImageClassificationService {
 			id: created.id,
 			createdAt: created.createdAt,
 			zones: created.zones.map(z => ({
-				name: z.name,
+				name: ensureZoneName(z.name),
 				breaking: z.breaking,
 				hasRust: z.hasRust,
 				isDirty: z.isDirty,
 				aiAnalysis: {
-					importance: z.importance,
+					importance: ensureImportance(z.importance),
 					consequences: z.consequences,
 					estimatedCost: z.estimatedCost,
-					urgency: z.urgency,
+					urgency: ensureUrgency(z.urgency),
 					timeToFix: z.timeToFix,
 				},
 			})),

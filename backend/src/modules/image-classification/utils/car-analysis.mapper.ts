@@ -1,8 +1,8 @@
-import { CarAnalysis, CarAnalysisZone } from '@prisma/client'
 import { CarAnalysisDto } from '../dtos/car-analysis.dto'
+import { CarAnalysisWithZones } from '../interfaces'
 
 export class CarAnalysisMapper {
-	static toDto(model: CarAnalysis & { zones: CarAnalysisZone[] }): CarAnalysisDto {
+	static toDto(model: CarAnalysisWithZones): CarAnalysisDto {
 		return {
 			id: model.id,
 			carModel: model.carModel,
