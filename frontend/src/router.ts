@@ -2,10 +2,12 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
+import { authService } from './modules/auth/services/auth.service'
+
 const routes: RouteRecordRaw[] = [
 	{
 		path: '/',
-		redirect: '/welcome'
+		redirect: '/welcome',
 	},
 	{
 		path: '/welcome',
@@ -15,6 +17,7 @@ const routes: RouteRecordRaw[] = [
 			title: 'CarScan - Добро пожаловать',
 			description: 'Добро пожаловать в CarScan - ваш надежный помощник в диагностике автомобилей.',
 			layout: 'blank',
+			requiresAuth: false,
 		},
 	},
 	{
@@ -25,6 +28,7 @@ const routes: RouteRecordRaw[] = [
 			title: 'CarScan - Вход',
 			description: 'Войдите в ваш аккаунт CarScan',
 			layout: 'blank',
+			requiresAuth: false,
 		},
 	},
 	{
@@ -35,6 +39,7 @@ const routes: RouteRecordRaw[] = [
 			title: 'CarScan - Регистрация',
 			description: 'Создайте новый аккаунт CarScan',
 			layout: 'blank',
+			requiresAuth: false,
 		},
 	},
 	{
@@ -45,6 +50,7 @@ const routes: RouteRecordRaw[] = [
 			title: 'CarScan - Главная',
 			description: 'Главная страница приложения CarScan.',
 			layout: 'blank',
+			requiresAuth: true,
 		},
 	},
 	{
@@ -55,17 +61,7 @@ const routes: RouteRecordRaw[] = [
 			title: 'CarScan - Сканирование',
 			description: 'Страница сканирования автомобиля.',
 			layout: 'blank',
-		},
-	},
-
-	{
-		path: '/app/profile',
-		name: 'profile',
-		component: () => import('@/modules/home/pages/home-page.vue'),
-		meta: {
-			title: 'CarScan - Профиль',
-			description: 'Страница профиля пользователя.',
-			layout: 'blank',
+			requiresAuth: true,
 		},
 	},
 
@@ -77,6 +73,7 @@ const routes: RouteRecordRaw[] = [
 			title: 'CarScan - Результаты',
 			description: 'Страница результатов сканирования.',
 			layout: 'blank',
+			requiresAuth: true,
 		},
 	},
 
@@ -88,6 +85,7 @@ const routes: RouteRecordRaw[] = [
 			title: 'CarScan - Результаты',
 			description: 'Страница результатов сканирования.',
 			layout: 'blank',
+			requiresAuth: true,
 		},
 	},
 ]
@@ -105,4 +103,52 @@ export const router = createRouter({
 		return { top: 0, behavior: 'smooth' }
 	},
 	routes,
+})
+
+/** ---------- Global beforeEach auth + meta middleware ---------- */
+const AUTH_ROUTE_NAMES = new Set(['login', 'register', 'welcome'])
+
+router.beforeEach(async to => {
+	// 1) Apply document title/description from meta
+	const title = (to.meta?.title as string) || 'CarScan'
+	if (title) document.title = title
+
+	const desc = to.meta?.description as string | undefined
+	if (desc) {
+		let tag = document.querySelector<HTMLMetaElement>('meta[name="description"]')
+		if (!tag) {
+			tag = document.createElement('meta')
+			tag.setAttribute('name', 'description')
+			document.head.appendChild(tag)
+		}
+		tag.setAttribute('content', desc)
+	}
+
+	// 2) Resolve current user
+	let user: unknown | null = null
+	try {
+		user = await authService.getCurrentUser()
+	} catch {
+		user = null
+	}
+
+	const requiresAuth = Boolean(to.meta?.requiresAuth)
+	const isAuthPage = AUTH_ROUTE_NAMES.has((to.name as string) || '')
+
+	// 3) Guard: block auth-required routes
+	if (requiresAuth && !user) {
+		return {
+			name: 'login',
+			query: { redirect: to.fullPath }, // so we can bounce back after login
+			replace: true,
+		}
+	}
+
+	// 4) Guard: prevent visiting auth pages if already logged in
+	if (!requiresAuth && isAuthPage && user) {
+		return { name: 'home', replace: true }
+	}
+
+	// allow navigation
+	return true
 })

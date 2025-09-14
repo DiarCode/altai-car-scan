@@ -1,89 +1,158 @@
-<!-- ScanDetails.vue -->
+<!-- src/modules/analysis/pages/analysis-details-page.vue -->
 <template>
-	<div class="min-h-screen bg-slate-100 text-slate-900">
-		<!-- Sticky header -->
-		<!-- Drop-in replacement for your header block -->
-		<header
-			class="sticky top-0 z-30 border-b border-slate-200 bg-white/60 backdrop-blur-md dark:bg-black/50"
-		>
-			<div class="mx-auto max-w-screen-sm py-4 px-5">
-				<!-- Top row: Back -->
-				<div class="flex items-center justify-between gap-4">
+	<div class="bg-slate-100 min-h-screen text-slate-900">
+		<!-- Header -->
+		<header class="top-0 z-30 sticky bg-white/60 backdrop-blur-md border-slate-200 border-b">
+			<div class="mx-auto px-5 py-4 max-w-screen-sm">
+				<div class="flex justify-between items-center gap-4">
 					<Button
 						size="icon"
 						variant="outline"
 						type="button"
 						@click="goBack"
 					>
-						<ArrowLeft class="h-5 w-5" />
+						<ArrowLeft class="w-5 h-5" />
 					</Button>
 
-					<h1 class="truncate text-sm text-slate-500 dark:text-slate-100">
-						{{ formatDate(scanData.createdAt) }}
+					<!-- date / loading -->
+					<h1 class="text-slate-500 text-sm truncate">
+						<template v-if="isLoading">
+							<Skeleton class="w-32 h-4" />
+						</template>
+						<template v-else-if="analysis">
+							{{ formatDate(analysis.createdAt) }}
+						</template>
 					</h1>
 				</div>
 
 				<!-- Main row -->
-				<div class="grid grid-cols-[1fr_auto] items-start gap-4 mt-4">
-					<!-- Left: date, car, city -->
+				<div class="items-start gap-4 grid grid-cols-[1fr_auto] mt-4">
 					<div>
-						<div class="text-xl font-semibold leading-tight text-slate-900 dark:text-slate-100">
-							{{ formatCurrency(scanData.totalEstimatedCost) }}
+						<div class="font-semibold text-xl leading-tight">
+							<template v-if="isLoading">
+								<Skeleton class="w-40 h-6" />
+							</template>
+							<template v-else-if="analysis">
+								{{ formatCurrency(analysis.totalEstimatedCost) }}
+							</template>
 						</div>
-						<span class="truncate">{{ scanData.carModel }}, {{ scanData.location }}</span>
+
+						<div class="text-slate-600 truncate">
+							<template v-if="isLoading">
+								<Skeleton class="mt-1 w-64 h-4" />
+							</template>
+							<template v-else-if="analysis">
+								{{ analysis.carModel }}, {{ analysis.city }}
+							</template>
+						</div>
 					</div>
 
 					<div
-						class="mt-1 inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium"
+						class="inline-flex items-center gap-2 mt-1 px-2.5 py-1 border rounded-full font-medium text-xs"
 						:class="riskChipClass"
 					>
-						<span class="tracking-wide">Риск</span>
-						<span>•</span>
-						<span>{{ riskRu }}</span>
+						<template v-if="isLoading">
+							<Skeleton class="rounded-full w-20 h-5" />
+						</template>
+						<template v-else>
+							<span class="tracking-wide">Риск</span>
+							<span>•</span>
+							<span>{{ riskRu }}</span>
+						</template>
 					</div>
 				</div>
 			</div>
 		</header>
-		<!-- Tabs -->
+
+		<!-- Content / error / empty -->
+		<div class="mx-auto px-4 max-w-screen-sm">
+			<Card
+				v-if="isError"
+				class="mt-4"
+			>
+				<CardContent class="py-5">
+					<p class="text-red-600 text-sm">Не удалось загрузить анализ. Попробуйте ещё раз.</p>
+					<div class="mt-3">
+						<Button
+							variant="secondary"
+							@click="refetch"
+							>Обновить</Button
+						>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card
+				v-else-if="!isLoading && !analysis"
+				class="mt-4"
+			>
+				<CardContent class="py-5">
+					<p class="text-slate-700 text-sm">Анализ не найден.</p>
+					<div class="flex gap-2 mt-3">
+						<Button
+							variant="secondary"
+							@click="goBack"
+							>К списку</Button
+						>
+						<Button @click="goScan">Сканировать авто</Button>
+					</div>
+				</CardContent>
+			</Card>
+		</div>
+
 		<Tabs
+			v-if="analysis"
 			v-model="activeTab"
 			class="mt-5 px-4"
 		>
-			<TabsList class="grid grid-cols-2 w-full bg-slate-200 h-12 rounded-lg">
+			<TabsList class="grid grid-cols-2 bg-slate-200 rounded-lg w-full h-12">
 				<TabsTrigger
 					value="summary"
-					class="data-[state=active]:bg-white data-[state=active]:text-slate-900 rounded-md"
+					class="data-[state=active]:bg-white rounded-md data-[state=active]:text-slate-900"
 				>
 					Общий анализ
 				</TabsTrigger>
-
 				<TabsTrigger
 					value="analysis"
-					class="data-[state=active]:bg-white data-[state=active]:text-slate-900 rounded-md"
+					class="data-[state=active]:bg-white rounded-md data-[state=active]:text-slate-900"
 				>
 					Анализ по зонам
 				</TabsTrigger>
 			</TabsList>
 
-			<!-- Content -->
-			<div class="max-w-screen-sm mt-3">
-				<!-- ANALYSIS TAB -->
+			<!-- ANALYSIS TAB -->
+			<div class="mt-3 max-w-screen-sm">
 				<TabsContent
 					value="analysis"
 					:force-mount="true"
 					v-show="activeTab === 'analysis'"
 				>
+					<!-- loading skeleton list -->
+					<div
+						v-if="isLoading"
+						class="space-y-2"
+					>
+						<Card
+							v-for="i in 3"
+							:key="i"
+							><CardContent class="py-4">
+								<Skeleton class="mb-2 w-44 h-5" />
+								<Skeleton class="w-full h-4" /> </CardContent
+						></Card>
+					</div>
+
 					<Accordion
+						v-else
 						type="single"
 						collapsible
 						v-model="expandedZone"
 						class="space-y-2"
 					>
 						<AccordionItem
-							v-for="zone in scanData.zones"
+							v-for="zone in analysis.zones"
 							:key="zone.name"
 							:value="zone.name"
-							class="rounded-xl bg-white"
+							class="bg-white rounded-xl"
 						>
 							<AccordionTrigger class="px-5 py-4 w-full">
 								<div class="flex items-center gap-3">
@@ -100,7 +169,7 @@
 										<h3 class="font-medium text-base">{{ zone.name }} часть</h3>
 										<span
 											v-if="zone.aiAnalysis.estimatedCost > 0"
-											class="text-sm text-slate-500 mt-1"
+											class="mt-1 text-slate-500 text-sm"
 										>
 											{{ formatCurrency(zone.aiAnalysis.estimatedCost) }}
 										</span>
@@ -110,77 +179,74 @@
 
 							<AccordionContent>
 								<Separator />
-								<div class="px-4 pb-4 pt-4 space-y-4">
+								<div class="space-y-4 px-4 pt-4 pb-4">
 									<!-- Issues chips -->
 									<div v-if="zone.breaking || zone.hasRust || zone.isDirty">
 										<div class="flex flex-wrap gap-2">
 											<Badge
 												v-if="zone.breaking"
 												variant="outline"
-												class="bg-red-50 text-red-700 border-red-200"
+												class="bg-red-50 border-red-200 text-red-700"
 											>
-												<AlertTriangle class="w-4 h-4 mr-1" />
-												Поломка
+												<AlertTriangle class="mr-1 w-4 h-4" /> Поломка
 											</Badge>
 											<Badge
 												v-if="zone.hasRust"
 												variant="outline"
-												class="bg-orange-50 text-orange-700 border-orange-200"
+												class="bg-orange-50 border-orange-200 text-orange-700"
 											>
 												Ржавчина
 											</Badge>
 											<Badge
 												v-if="zone.isDirty"
 												variant="outline"
-												class="bg-slate-50 text-slate-700 border-slate-200"
+												class="bg-slate-50 border-slate-200 text-slate-700"
 											>
 												Загрязнение
 											</Badge>
 										</div>
 									</div>
 
-									<!-- AI analysis blocks -->
-									<p class="text-sm text-slate-700">
+									<!-- AI analysis -->
+									<p class="text-slate-700 text-sm">
 										{{ zone.aiAnalysis.importance }}
 									</p>
 
 									<Card
 										v-if="zone.aiAnalysis.consequences.length"
-										class="border-amber-200 bg-amber-50"
+										class="bg-amber-50 border-amber-200"
 									>
 										<CardContent>
-											<div>
-												<h4 class="font-medium text-amber-900 mb-2">К чему может привести:</h4>
-												<ul class="space-y-1">
-													<li
-														v-for="(c, i) in zone.aiAnalysis.consequences"
-														:key="i"
-														class="text-sm text-amber-800 flex items-start gap-2"
-													>
-														<span class="w-1.5 h-1.5 bg-amber-600 rounded-full mt-2"></span>
-														{{ c }}
-													</li>
-												</ul>
-											</div>
+											<h4 class="mb-2 font-medium text-amber-900">К чему может привести:</h4>
+											<ul class="space-y-1">
+												<li
+													v-for="(c, i) in zone.aiAnalysis.consequences"
+													:key="i"
+													class="flex items-start gap-2 text-amber-800 text-sm"
+												>
+													<span class="bg-amber-600 mt-2 rounded-full w-1.5 h-1.5"></span>
+													{{ c }}
+												</li>
+											</ul>
 										</CardContent>
 									</Card>
 
 									<!-- Cost / Time -->
-									<div class="grid grid-cols-2 gap-3">
-										<Card class="border-orange-200 bg-orange-50">
+									<div class="gap-3 grid grid-cols-2">
+										<Card class="bg-orange-50 border-orange-200">
 											<CardContent>
 												<span class="font-medium text-orange-900">Стоимость</span>
-												<p class="text-lg font-bold text-orange-800">
+												<p class="font-bold text-orange-800 text-lg">
 													{{ zone.aiAnalysis.estimatedCost > 0 ? formatCurrency(zone.aiAnalysis.estimatedCost) : 'Бесплатно' }}
 												</p>
 											</CardContent>
 										</Card>
 
-										<Card class="border-violet-200 bg-violet-50">
+										<Card class="bg-violet-50 border-violet-200">
 											<CardContent>
 												<span class="font-medium text-violet-900">Время</span>
-												<p class="text-lg font-bold text-violet-800">
-													{{ zone.aiAnalysis.timeToFix }}
+												<p class="font-bold text-violet-800 text-lg">
+													{{ zone.aiAnalysis.timeToFix || '—' }}
 												</p>
 											</CardContent>
 										</Card>
@@ -198,18 +264,19 @@
 					v-show="activeTab === 'summary'"
 				>
 					<div class="space-y-4">
-						<section class="rounded-3xl bg-white border border-slate-200 overflow-hidden">
+						<!-- Zones carousel -->
+						<section class="bg-white border border-slate-200 rounded-3xl overflow-hidden">
 							<header class="px-6 py-5">
-								<h3 class="text-xl font-semibold">Состояние по сторонам</h3>
+								<h3 class="font-semibold text-xl">Состояние по сторонам</h3>
 							</header>
 
 							<div class="relative">
 								<!-- arrows -->
-								<div class="absolute inset-y-0 left-1 flex items-center z-10">
+								<div class="left-1 z-10 absolute inset-y-0 flex items-center">
 									<Button
 										size="icon"
 										variant="ghost"
-										class="h-9 w-9 rounded-full bg-white/80 border border-slate-200 hover:bg-white"
+										class="bg-white/80 hover:bg-white border border-slate-200 rounded-full w-9 h-9"
 										:disabled="activeIdx === 0"
 										@click="prevSlide"
 										aria-label="Назад"
@@ -217,11 +284,11 @@
 										<ChevronLeft class="w-5 h-5 text-slate-700" />
 									</Button>
 								</div>
-								<div class="absolute inset-y-0 right-1 flex items-center z-10">
+								<div class="right-1 z-10 absolute inset-y-0 flex items-center">
 									<Button
 										size="icon"
 										variant="ghost"
-										class="h-9 w-9 rounded-full bg-white/80 border border-slate-200 hover:bg-white"
+										class="bg-white/80 hover:bg-white border border-slate-200 rounded-full w-9 h-9"
 										:disabled="activeIdx === visualZones.length - 1"
 										@click="nextSlide"
 										aria-label="Вперед"
@@ -230,41 +297,39 @@
 									</Button>
 								</div>
 
-								<!-- track: edge-bleed (first slides stick out of left) -->
+								<!-- track -->
 								<div
 									ref="carouselEl"
-									class="flex gap-3 mx-4 py-3 overflow-x-auto snap-x snap-mandatory scroll-smooth
-               [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+									class="[&::-webkit-scrollbar]:hidden flex gap-3 mx-4 py-3 [-ms-overflow-style:none] overflow-x-auto scroll-smooth snap-mandatory snap-x [scrollbar-width:none]"
 									@scroll.passive="onScroll"
 								>
-									<!-- slides: cardless -->
+									<!-- slides -->
 									<button
 										v-for="(z, i) in visualZones"
 										:key="z.name"
-										class="snap-start shrink-0 w-full relative"
+										class="relative w-full snap-start shrink-0"
 										:class="[ i===0 ? 'ms-4' : '', i===visualZones.length-1 ? 'me-4' : '' ]"
 										@click="openZone(z.name)"
 									>
-										<!-- big image -->
 										<img
 											:src="z.img"
 											:alt="`${z.name} часть`"
-											class="w-full aspect-[16/9] object-contain"
+											class="w-full object-contain aspect-[16/9]"
 											@error="onImgError"
 										/>
 
-										<!-- top-left: state chip + zone -->
-										<div class="absolute left-3 top-3 flex items-center gap-2">
+										<!-- state chip -->
+										<div class="top-3 left-3 absolute">
 											<span
-												class="px-2.5 py-1 rounded-full text-[11px] font-semibold border backdrop-blur-sm"
+												class="backdrop-blur-sm px-2.5 py-1 border rounded-full font-semibold text-[11px]"
 												:class="chipClass(z.state)"
 											>
 												{{ z.state === 'break' ? 'Поломка' : z.state === 'warn' ? 'Обслуживание' : 'Ок' }}
 											</span>
 										</div>
 
-										<!-- top-right: percent ONLY (state color, no ring/chip) -->
-										<div class="absolute right-3 top-3">
+										<!-- percent only -->
+										<div class="top-3 right-3 absolute">
 											<span :class="['text-xl font-extrabold', percentColor(z.state)]">
 												{{ Math.round(z.percent) }}%
 											</span>
@@ -273,11 +338,11 @@
 								</div>
 
 								<!-- dots -->
-								<div class="py-2 flex items-center justify-center gap-2">
+								<div class="flex justify-center items-center gap-2 py-2">
 									<span
 										v-for="(_, i) in visualZones.length"
 										:key="i"
-										class="h-1.5 rounded-full transition-all"
+										class="rounded-full h-1.5 transition-all"
 										:class="activeIdx === i ? 'bg-emerald-600 w-6' : 'bg-slate-300 w-2'"
 									/>
 								</div>
@@ -288,67 +353,70 @@
 						<Card class="bg-white">
 							<CardContent>
 								<div class="flex items-center gap-3 mb-4">
-									<div class="p-3 bg-primary rounded-lg">
+									<div class="bg-primary p-3 rounded-lg">
 										<Shield class="w-6 h-6 text-primary-foreground" />
 									</div>
 									<div>
-										<h2 class="text-lg font-bold">Общий анализ состояния</h2>
-										<p class="text-sm text-slate-600">Рекомендации ИИ на основе сканирования</p>
+										<h2 class="font-bold text-lg">Общий анализ состояния</h2>
+										<p class="text-slate-600 text-sm">Рекомендации ИИ на основе сканирования</p>
 									</div>
 								</div>
-								<p class="text-slate-800 leading-relaxed">
-									{{ scanData.overallAnalysis.summary }}
-								</p>
+
+								<template v-if="isLoading">
+									<Skeleton class="mb-2 w-full h-4" />
+									<Skeleton class="w-4/5 h-4" />
+								</template>
+								<template v-else>
+									<p class="text-slate-800 leading-relaxed">
+										{{ analysis.summary || 'Детализация недоступна' }}
+									</p>
+								</template>
 							</CardContent>
 						</Card>
 
 						<!-- Stats -->
-						<div class="grid grid-cols-2 gap-3">
+						<div class="gap-3 grid grid-cols-2">
 							<Card>
 								<CardContent>
 									<span class="font-base">Проблемных зон</span>
-
-									<p class="text-2xl font-bold mt-4">{{ activeZones.length }}</p>
+									<p class="mt-4 font-bold text-2xl">{{ activeZones.length }}</p>
 								</CardContent>
 							</Card>
 							<Card>
 								<CardContent>
-									<span class="font-base">Время ремонта</span>
-
-									<p class="text-2xl font-bold mt-4">
-										{{ scanData.overallAnalysis.totalTimeEstimate }}
-									</p>
+									<span class="font-base">Общая оценка</span>
+									<p class="mt-4 font-bold text-2xl">{{ (analysis.overallScore ?? 0) }}%</p>
 								</CardContent>
 							</Card>
 						</div>
 
-						<!-- Priority order -->
+						<!-- Priority order (derived) -->
 						<Card>
 							<CardContent>
 								<div class="flex items-center gap-3 mb-4">
 									<Zap class="w-6 h-6 text-amber-600" />
-									<h3 class="text-lg font-semibold">Порядок приоритета ремонта</h3>
+									<h3 class="font-semibold text-lg">Приоритет ремонта</h3>
 								</div>
 								<div class="space-y-2">
 									<div
-										v-for="(zoneName, idx) in scanData.overallAnalysis.priorityOrder"
+										v-for="(zoneName, idx) in priorityOrder"
 										:key="zoneName"
-										class="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+										class="flex justify-between items-center bg-slate-50 p-3 rounded-lg"
 									>
 										<div class="flex items-center gap-3">
 											<span
-												class="w-6 h-6 rounded-full grid place-items-center text-sm font-bold"
+												class="place-items-center grid rounded-full w-6 h-6 font-bold text-sm"
 												:class="priorityColors[idx] || 'bg-slate-200 text-slate-800'"
 											>
 												{{ idx + 1 }}
 											</span>
 											<span class="font-medium">{{ zoneName }} часть</span>
 										</div>
-										<span class="text-sm text-slate-700">
+										<span class="text-slate-700 text-sm">
 											{{
-                      (scanData.zones.find(z => z.name === zoneName)?.aiAnalysis.estimatedCost ?? 0) > 0
-                        ? formatCurrency(scanData.zones.find(z => z.name === zoneName)!.aiAnalysis.estimatedCost)
-                        : 'Не требует затрат'
+                        (analysis.zones.find(z => z.name === zoneName)?.aiAnalysis.estimatedCost ?? 0) > 0
+                          ? formatCurrency(analysis.zones.find(z => z.name === zoneName)!.aiAnalysis.estimatedCost)
+                          : 'Не требует затрат'
 											}}
 										</span>
 									</div>
@@ -363,17 +431,15 @@
 </template>
 
 <script setup lang="ts">
-import { AlertTriangle, ArrowLeft, CheckCircle, Shield, Wrench, Zap } from 'lucide-vue-next';
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
-import { nextTick, onBeforeUnmount, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { AlertTriangle, ArrowLeft, CheckCircle, ChevronLeft, ChevronRight, Shield, Wrench, Zap } from 'lucide-vue-next';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 
 
+/* images (ok/warn/break for each zone) */
 import imgFallback from '@/core/assets/zones/fallback.png';
 import frontBreak from '@/core/assets/zones/front_break.png';
-// PNGs: one per zone × state (ok | warn | break)
 import frontOk from '@/core/assets/zones/front_ok.png';
 import frontWarn from '@/core/assets/zones/front_warn.png';
 import leftBreak from '@/core/assets/zones/left_break.png';
@@ -387,200 +453,83 @@ import rightOk from '@/core/assets/zones/right_ok.png';
 import rightWarn from '@/core/assets/zones/right_warn.png';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/core/components/ui/accordion';
 import { Badge } from '@/core/components/ui/badge';
-import { Button } from "@/core/components/ui/button";
-/* shadcn-vue */
+import { Button } from '@/core/components/ui/button';
 import { Card, CardContent } from '@/core/components/ui/card';
 import { Separator } from '@/core/components/ui/separator';
+import { Skeleton } from '@/core/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/core/components/ui/tabs';
 
 
 
+/* data composable */
+import { useAnalysis } from '@/modules/analysis/composables/analysis.composables';
+import { type CarAnalysisDto, CarStatus } from '@/modules/analysis/models/analysis.models';
 
 
-type Urgency = 'low' | 'medium' | 'high'
-type Risk = 'low' | 'medium' | 'high'
 
-type ZoneAnalysis = {
-  name: 'Передняя' | 'Левая' | 'Правая' | 'Задняя'
-  breaking: boolean
-  hasRust: boolean
-  isDirty: boolean
-  aiAnalysis: {
-    importance: string
-    consequences: string[]
-    estimatedCost: number
-    urgency: Urgency
-    timeToFix: string
-  }
-}
 
-type ScanDetails = {
-  id: string
-  carModel: string
-  location: string
-  createdAt: Date
-  totalEstimatedCost: number
-  zones: ZoneAnalysis[]
-  overallAnalysis: {
-    summary: string
-    priorityOrder: string[]
-    totalTimeEstimate: string
-    riskLevel: Risk
-  }
-}
 
-/* router */
+/* Router */
 const router = useRouter()
+const route = useRoute()
 const goBack = () => router.push({ name: 'analysis' })
+const goScan = () => router.push({ name: 'scan' })
 
-/* state */
+/* Params -> id (number) */
+const analysisId = computed(() => {
+  const raw = route.params.id
+  const n = Number(Array.isArray(raw) ? raw[0] : raw)
+  return Number.isFinite(n) ? n : undefined
+})
+
+/* Fetch */
+const { data, isLoading, isError, refetch } = useAnalysis(analysisId)
+const analysis = computed<CarAnalysisDto | undefined>(() => data.value)
+
+/* UI state */
 const activeTab = ref<'analysis' | 'summary'>('summary')
 const expandedZone = ref<string | undefined>()
 
-/* demo data (same as React) */
-const scanData: ScanDetails = {
-  id: 'scan_001',
-  carModel: 'Toyota Camry 2019',
-  location: 'Алматы',
-  createdAt: new Date('2025-09-12T14:30:00'),
-  totalEstimatedCost: 850000,
-  zones: [
-    {
-      name: 'Передняя',
-      breaking: true,
-      hasRust: true,
-      isDirty: true,
-      aiAnalysis: {
-        importance:
-          'Передняя часть автомобиля критически важна для безопасности. Поломки в этой зоне могут повлиять на управляемость и тормозную систему.',
-        consequences: [
-          'Снижение эффективности торможения',
-          'Проблемы с рулевым управлением',
-          'Повышенный износ шин',
-          'Риск аварийных ситуаций'
-        ],
-        estimatedCost: 450000,
-        urgency: 'high',
-        timeToFix: '2-3 дня'
-      }
-    },
-    {
-      name: 'Левая',
-      breaking: false,
-      hasRust: false,
-      isDirty: false,
-      aiAnalysis: {
-        importance:
-          'Левая сторона в отличном состоянии. Профилактическое обслуживание поможет сохранить текущее состояние.',
-        consequences: [],
-        estimatedCost: 0,
-        urgency: 'low',
-        timeToFix: 'Не требуется'
-      }
-    },
-    {
-      name: 'Правая',
-      breaking: true,
-      hasRust: false,
-      isDirty: true,
-      aiAnalysis: {
-        importance:
-          'Правая сторона имеет структурные повреждения, которые могут прогрессировать и привести к более серьезным проблемам.',
-        consequences: [
-          'Ухудшение аэродинамики',
-          'Проникновение влаги внутрь кузова',
-          'Коррозия металлических элементов',
-          'Снижение стоимости автомобиля'
-        ],
-        estimatedCost: 280000,
-        urgency: 'medium',
-        timeToFix: '1-2 дня'
-      }
-    },
-    {
-      name: 'Задняя',
-      breaking: false,
-      hasRust: false,
-      isDirty: true,
-      aiAnalysis: {
-        importance:
-          'Задняя часть требует косметической очистки. Загрязнения могут скрывать начальные признаки износа.',
-        consequences: [
-          'Ухудшение внешнего вида',
-          'Возможность пропустить ранние признаки коррозии',
-          'Снижение видимости задних световых приборов'
-        ],
-        estimatedCost: 120000,
-        urgency: 'low',
-        timeToFix: '3-4 часа'
-      }
-    }
-  ],
-  overallAnalysis: {
-    summary:
-      'Автомобиль требует немедленного внимания к передней части из-за критических поломок. Правая сторона нуждается в ремонте в среднесрочной перспективе. Общее состояние требует комплексного подхода к восстановлению.',
-    priorityOrder: ['Передняя', 'Правая', 'Задняя', 'Левая'],
-    totalTimeEstimate: '4-6 дней',
-    riskLevel: 'high'
-  }
-}
-
-/* computed */
-const activeZones = computed(() =>
-  scanData.zones.filter(z => z.breaking || z.hasRust || z.isDirty)
-)
-
-const priorityColors = [
-  'bg-red-100 text-red-800',
-  'bg-amber-100 text-amber-800',
-  'bg-primary text-primary',
-  'bg-slate-200 text-slate-800'
-]
-
-/* helpers */
-const formatDate = (d: Date) =>
-  d.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+/* Helpers */
+const formatDate = (d: string | Date) =>
+  new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('kk-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(v)
 
-
+/* Risk mapping from server status */
+type Risk = 'low' | 'medium' | 'high'
+const statusToRisk = (s?: CarAnalysisDto['status']): Risk => {
+  if (!s) return 'low'
+  if (s === CarStatus.CRITICAL_CONDITION) return 'high'
+  if (s === CarStatus.COSMETIC_ISSUES || s === CarStatus.MECHANICAL_SERVICE_NEEDED) return 'medium'
+  return 'low'
+}
 const riskRu = computed(() => {
-  const r = scanData.overallAnalysis.riskLevel
+  const r = statusToRisk(analysis.value?.status)
   return r === 'high' ? 'Высокий' : r === 'medium' ? 'Средний' : 'Низкий'
 })
-
 const riskChipClass = computed(() => {
-  const r = scanData.overallAnalysis.riskLevel
-  if (r === 'high') return 'border-red-300 text-red-700 dark:text-red-400'
-  if (r === 'medium') return 'border-amber-300 text-amber-700 dark:text-amber-400'
-  return 'border-primary text-primary'
+  const r = statusToRisk(analysis.value?.status)
+  if (r === 'high') return 'border-red-300 text-red-700'
+  if (r === 'medium') return 'border-amber-300 text-amber-700'
+  return 'border-emerald-600 text-emerald-700'
 })
 
-const getZoneStatus = (z: ZoneAnalysis) => {
+/* Zone helpers (server DTO zones) */
+const getZoneStatus = (z: CarAnalysisDto['zones'][number]) => {
   if (z.breaking) return { label: 'Поломка', colorBox: 'border-red-200 text-red-700', icon: AlertTriangle }
   if (z.hasRust || z.isDirty) return { label: 'Обслуживание', colorBox: 'border-amber-200 text-amber-700', icon: Wrench }
   return { label: 'Отлично', colorBox: 'border-green-500 text-green-500', icon: CheckCircle }
 }
-
-
-// map name -> key
-const keyOf = (n: ZoneAnalysis['name']) =>
-  n === 'Передняя' ? 'front' : n === 'Левая' ? 'left' : n === 'Правая' ? 'right' : 'rear'
-
-// state
 type ZoneState = 'ok' | 'warn' | 'break'
-const zoneState = (z: ZoneAnalysis): ZoneState =>
+const zoneState = (z: CarAnalysisDto['zones'][number]): ZoneState =>
   z.breaking ? 'break' : (z.hasRust || z.isDirty) ? 'warn' : 'ok'
 
-// choose PNG by zone & state
-const zoneImg = (name: ZoneAnalysis['name'], st: ZoneState) => {
+const keyOf = (n: CarAnalysisDto['zones'][number]['name']) =>
+  n === 'Передняя' ? 'front' : n === 'Левая' ? 'left' : n === 'Правая' ? 'right' : 'rear'
+
+const zoneImg = (name: CarAnalysisDto['zones'][number]['name'], st: ZoneState) => {
   const k = keyOf(name)
   const map: Record<string, Record<ZoneState, string>> = {
     front: { ok: frontOk, warn: frontWarn, break: frontBreak },
@@ -590,24 +539,38 @@ const zoneImg = (name: ZoneAnalysis['name'], st: ZoneState) => {
   }
   return map[k]?.[st] || imgFallback
 }
-
-// % issues (boolean model → readable %)
-const issuePercent = (z: ZoneAnalysis) => {
+const issuePercent = (z: CarAnalysisDto['zones'][number]) => {
   if (z.breaking) return 100
-  const p = (z.hasRust ? 60 : 0) + (z.isDirty ? 40 : 0) // both=100, rust=60, dirty=40
+  const p = (z.hasRust ? 60 : 0) + (z.isDirty ? 40 : 0)
   return Math.min(100, p)
 }
-
 const chipClass = (s: ZoneState) =>
   s === 'break'
     ? 'bg-red-50 text-red-700 border-red-200'
     : s === 'warn'
       ? 'bg-amber-50 text-amber-700 border-amber-200'
       : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+const percentColor = (s: ZoneState) =>
+  s === 'break' ? 'text-red-500' : s === 'warn' ? 'text-amber-500' : 'text-emerald-600'
 
-// precompute visual tiles for summary grid
+/* Derived */
+const activeZones = computed(() => (analysis.value?.zones ?? []).filter(z => z.breaking || z.hasRust || z.isDirty))
+
+/** Priority (derived): break → warn → ok, tie by estimatedCost desc */
+const priorityOrder = computed(() => {
+  const zones = analysis.value?.zones ?? []
+  const score = (z: CarAnalysisDto['zones'][number]) =>
+    (z.breaking ? 3 : (z.hasRust || z.isDirty) ? 2 : 1) * 10 + (z.aiAnalysis.estimatedCost || 0) / 1e6
+  return zones
+    .slice()
+    .sort((a, b) => score(b) - score(a))
+    .map(z => z.name)
+})
+
+/* visual zone tiles */
 const visualZones = computed(() => {
-  return scanData.zones.map((z) => {
+  const zones = analysis.value?.zones ?? []
+  return zones.map((z) => {
     const st = zoneState(z)
     return {
       name: z.name,
@@ -621,27 +584,19 @@ const visualZones = computed(() => {
     }
   })
 })
-
 const onImgError = (e: Event) => {
   const t = e.target as HTMLImageElement
   if (t && t.src !== imgFallback) t.src = imgFallback
 }
-
-// open zone details
-const openZone = (name: ZoneAnalysis['name']) => {
+const openZone = (name: CarAnalysisDto['zones'][number]['name']) => {
   activeTab.value = 'analysis'
   expandedZone.value = name
 }
 
-// Color for percent text
-const percentColor = (s: ZoneState) =>
-  s === 'break' ? 'text-red-500' : s === 'warn' ? 'text-amber-500' : 'text-emerald-600'
-
-
+/* Carousel logic */
 const carouselEl = ref<HTMLDivElement | null>(null)
 const activeIdx = ref(0)
 const slideOffsets = ref<number[]>([])
-
 const measure = () => {
   const el = carouselEl.value
   if (!el) return
@@ -649,7 +604,6 @@ const measure = () => {
     (c) => (c as HTMLElement).offsetLeft - el.offsetLeft
   )
 }
-
 const toIndex = (i: number) => {
   const el = carouselEl.value
   if (!el) return
@@ -657,24 +611,27 @@ const toIndex = (i: number) => {
   el.scrollTo({ left: slideOffsets.value[clamped] ?? 0, behavior: 'smooth' })
   activeIdx.value = clamped
 }
-
 const prevSlide = () => toIndex(activeIdx.value - 1)
 const nextSlide = () => toIndex(activeIdx.value + 1)
-
 const onScroll = () => {
   const el = carouselEl.value
   if (!el || slideOffsets.value.length === 0) return
   const x = el.scrollLeft
-  let nearest = 0
-  let best = Number.POSITIVE_INFINITY
+  let nearest = 0; let best = Infinity
   slideOffsets.value.forEach((off, i) => {
     const d = Math.abs(off - x)
     if (d < best) { best = d; nearest = i }
   })
   activeIdx.value = nearest
 }
-
 const ro = new ResizeObserver(() => measure())
 onMounted(async () => { await nextTick(); if (carouselEl.value) ro.observe(carouselEl.value); measure() })
 onBeforeUnmount(() => ro.disconnect())
+
+/* Re-measure when data arrives or count changes */
+watch(() => visualZones.value.length, async () => {
+  await nextTick(); measure(); toIndex(0)
+})
+
+const priorityColors = [ 'bg-red-100 text-red-800', 'bg-amber-100 text-amber-800', 'bg-primary text-primary', 'bg-slate-200 text-slate-800' ]
 </script>
