@@ -8,7 +8,7 @@ import {
 	BadRequestException,
 	UseGuards,
 } from '@nestjs/common'
-import { AnyFilesInterceptor } from '@nestjs/platform-express'
+import { FileFieldsInterceptor } from '@nestjs/platform-express'
 import { CarAnalysisDto } from './dtos/car-analysis.dto'
 import { CarAnalysisMapper } from './utils/car-analysis.mapper'
 import { ImageClassificationService } from './image-classification.service'
@@ -36,18 +36,34 @@ export class ImageClassificationController {
 	 * Accepts a car photo (bytes), calls classification pipeline, and returns LLM analysis.
 	 */
 	@Post('analyze-car')
-	@UseInterceptors(AnyFilesInterceptor())
+	@UseInterceptors(
+		FileFieldsInterceptor([
+			{ name: 'front', maxCount: 1 },
+			{ name: 'back', maxCount: 1 },
+			{ name: 'left', maxCount: 1 },
+			{ name: 'right', maxCount: 1 },
+		]),
+	)
 	async analyzeCar(
-		@UploadedFiles() files: Express.Multer.File[],
+		@UploadedFiles()
+		files: {
+			front?: Express.Multer.File[]
+			back?: Express.Multer.File[]
+			left?: Express.Multer.File[]
+			right?: Express.Multer.File[]
+		},
 		@GetCurrentUser() user: UserClaims,
 	): Promise<LLMCarAnalysisResult> {
-		if (!files || files.length === 0 || files.length > 4) {
-			throw new BadRequestException('Provide between 1 and 4 images: front, back, left, right')
+		const orderedKeys: (keyof typeof files)[] = ['front', 'back', 'left', 'right']
+		const present: Express.Multer.File[] = []
+		for (const k of orderedKeys) {
+			const arr = files[k]
+			if (arr && arr.length > 0) present.push(arr[0])
 		}
-		const buffers = files.map(f => f.buffer).filter(Boolean)
-		if (buffers.length !== files.length) {
-			throw new BadRequestException('One or more images are invalid')
+		if (present.length === 0) {
+			throw new BadRequestException('At least one of front/back/left/right images is required')
 		}
+		const buffers = present.map(f => f.buffer).filter(Boolean)
 		let pipelineResult: ClassificationPipelineResult | ClassificationPipelineResult[]
 		if (buffers.length === 1) {
 			const single = await this.service.callClassificationPipeline(buffers[0])

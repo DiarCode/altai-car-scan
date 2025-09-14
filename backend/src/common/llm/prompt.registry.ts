@@ -17,6 +17,7 @@ export class PromptRegistry {
 		- For each car zone (front, back, left, right), analyze the likelihood and impact of breaking, rust, and dirt, and provide a detailed AI-based analysis.
 		- Assess the importance, consequences, estimated cost, urgency, and time to fix for each issue.
 		- Ensure your output is accurate, realistic, and useful for both car owners and service professionals.
+		- The content must be on Russian language. Extensive and easy to understand.
 					`,
 			user: `
 		Car Information:
@@ -24,9 +25,6 @@ export class PromptRegistry {
 
 		Partners:
 		{{partners}}
-
-		Services:
-		{{services}}
 
 		Classification Result (technical, mapped for LLM):
 		{{pipelineResult}}
@@ -40,7 +38,7 @@ export class PromptRegistry {
 				 - Importance (string, e.g. "critical", "moderate", "minor")
 				 - Consequences (string[], e.g. ["reduced safety", "lower resale value"]) // provide a realistic list of possible consequences
 				 - Estimated cost (number, KZT)
-				 - Urgency (string, e.g. "immediate", "soon", "can wait")
+				 - Urgency (string, e.g. "low", "medium", "high")
 				 - Time to fix (string or null, e.g. "2 days", "1 week", or null if unknown)
 		2. Calculate the total estimated cost for all zones.
 		3. Return a single JSON object with the following structure:
@@ -64,6 +62,79 @@ export class PromptRegistry {
 						estimatedCost: number,
 						urgency: string,
 						timeToFix: string | null
+					}
+				}
+			]
+		}
+
+		example output:
+		{
+			"id": 1,
+			"carModel": "Toyota Camry",
+			"carYear": 2019,
+			"city": "Алматы",
+			"vin": "VIN1232",
+			"createdAt": "2025-09-12T14:30:00Z",
+			"totalEstimatedCost": 850000,
+			"zones": [
+				{
+				"name": "Передняя",
+				"breaking": true,
+				"hasRust": true,
+				"isDirty": true,
+				"aiAnalysis": {
+					"importance": "Передняя часть критически важна для безопасности и торможения.",
+					"consequences": [
+						"Снижение эффективности торможения",
+						"Риск аварийных ситуаций"
+					],
+					"estimatedCost": 450000,
+					"urgency": "high",
+					"timeToFix": "2-3 дня"
+					}
+				},
+				{
+				"name": "Левая",
+				"breaking": false,
+				"hasRust": false,
+				"isDirty": false,
+				"aiAnalysis": {
+					"importance": "Состояние отличное.",
+					"consequences": [],
+					"estimatedCost": 0,
+					"urgency": "low",
+					"timeToFix": null
+					}
+				},
+				{
+				"name": "Правая",
+				"breaking": true,
+				"hasRust": false,
+				"isDirty": true,
+				"aiAnalysis": {
+					"importance": "Повреждения могут прогрессировать.",
+					"consequences": [
+						"Проникновение влаги",
+						"Коррозия элементов"
+					],
+					"estimatedCost": 280000,
+					"urgency": "medium",
+					"timeToFix": "1-2 дня"
+					}
+				},
+				{
+				"name": "Задняя",
+				"breaking": false,
+				"hasRust": false,
+				"isDirty": true,
+				"aiAnalysis": {
+					"importance": "Нужна чистка: загрязнения скрывают износ.",
+					"consequences": [
+						"Плохая видимость фонарей"
+					],
+					"estimatedCost": 120000,
+					"urgency": "low",
+					"timeToFix": "3-4 часа"
 					}
 				}
 			]

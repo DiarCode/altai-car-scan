@@ -88,6 +88,7 @@ enum SERVICE_TYPE {
 model InDrivePartner {
   id        Int      @id @default(autoincrement()) @map("id")
   name      String   @map("name")
+  city      String   @map("city")
   address   String   @map("address")
   phone     String   @map("phone")
   description String?  @map("description")

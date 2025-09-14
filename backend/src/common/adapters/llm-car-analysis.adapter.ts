@@ -25,13 +25,11 @@ export class LLMCarAnalysisAdapter {
 		userId: number,
 		carInfo: { carModel: string; carYear: number; city: string; vin: string },
 		partners: any[],
-		services: any[],
 	): Promise<LLMCarAnalysisResult> {
 		const { messages, maxTokens } = this.promptBuilder.buildCarAnalysisPrompt(
 			mappedPipelineResult,
 			carInfo,
 			partners,
-			services,
 		)
 
 		let lastError: unknown

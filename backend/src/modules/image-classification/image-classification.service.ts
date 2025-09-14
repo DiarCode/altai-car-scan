@@ -65,8 +65,7 @@ export class ImageClassificationService {
 		if (!user) throw new Error('User not found')
 
 		// Fetch partners and services (stub, replace with real queries)
-		const partners = await this.prisma.inDrivePartner.findMany()
-		const services = [] // TODO: fetch or define services
+		const partners = await this.prisma.inDrivePartner.findMany({ where: { city: user.city ?? '' } })
 
 		const carInfo = {
 			carModel: user.carModel || '',
@@ -83,7 +82,6 @@ export class ImageClassificationService {
 			userId,
 			carInfo,
 			partners,
-			services,
 		)
 
 		// Save to DB
