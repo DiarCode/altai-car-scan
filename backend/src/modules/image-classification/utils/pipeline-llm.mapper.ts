@@ -25,6 +25,10 @@ export function mapPipelineResultForLLM(
 	result: ClassificationPipelineResult | ClassificationPipelineResult[],
 ): Record<string, any> {
 	if (Array.isArray(result)) {
+		console.debug(
+			`Mapping array of ${result.length} classification results for LLM`,
+			JSON.stringify(result),
+		)
 		return { images: result.map(r => mapSingle(r)) }
 	}
 	return mapSingle(result)

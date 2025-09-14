@@ -38,8 +38,8 @@ export class PromptRegistry {
 			 - Is it dirty? (boolean)
 			 - Provide an AI-based analysis with:
 				 - Importance (string, e.g. "critical", "moderate", "minor")
-				 - Consequences (string[], e.g. ["reduced safety", "lower resale value"])
-				 - Estimated cost (number, USD)
+				 - Consequences (string[], e.g. ["reduced safety", "lower resale value"]) // provide a realistic list of possible consequences
+				 - Estimated cost (number, KZT)
 				 - Urgency (string, e.g. "immediate", "soon", "can wait")
 				 - Time to fix (string or null, e.g. "2 days", "1 week", or null if unknown)
 		2. Calculate the total estimated cost for all zones.
@@ -51,7 +51,7 @@ export class PromptRegistry {
 			city: string,
 			vin: string,
 			createdAt: string, // ISO date string
-			totalEstimatedCost: number,
+			totalEstimatedCost: number, // tenge
 			zones: [
 				{
 					name: string, // zone name
