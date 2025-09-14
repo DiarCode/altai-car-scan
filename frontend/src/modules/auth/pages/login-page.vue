@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuth } from '../composables/use-auth.composable'
-import AppInput from '../components/app-input.vue'
-import AppButton from '../components/app-button.vue'
-import OtpInput from '../components/otp-input.vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+
+
+import AppButton from '../components/app-button.vue';
+import AppInput from '../components/app-input.vue';
+import OtpInput from '../components/otp-input.vue';
+import { useAuth } from '../composables/use-auth.composable';
+
+
+
+
 
 const router = useRouter()
 const authState = useAuth()
@@ -22,15 +29,15 @@ const isValidPhone = computed(() => {
 const formatPhoneNumber = (value: string) => {
 	// Remove all non-digits first
 	let cleanValue = value.replace(/\D/g, '')
-	
+
 	// Limit to maximum 11 digits
 	cleanValue = cleanValue.slice(0, 11)
-	
+
 	// If starts with 8, replace with 7
 	if (cleanValue.startsWith('8')) {
 		cleanValue = '7' + cleanValue.slice(1)
 	}
-	
+
 	// If starts with 7, add + prefix
 	if (cleanValue.startsWith('7')) {
 		return '+' + cleanValue
@@ -67,7 +74,7 @@ const handleOtpComplete = async (otp: string) => {
 
 const resendCode = async () => {
 	if (resendTimer.value > 0) return
-	
+
 	await authState.login(authState.loginState.phoneNumber)
 	startResendTimer()
 }
@@ -119,144 +126,202 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="min-h-screen bg-background flex flex-col">
+	<div class="min-h-screen bg-slate-100 text-slate-900">
+		<!-- soft background accents -->
+		<div class="pointer-events-none fixed inset-0 -z-10 opacity-30">
+			<div
+				class="absolute -top-24 -right-24 h-80 w-80 rounded-full blur-3xl"
+				style="background: radial-gradient(closest-side, rgba(16,185,129,.25), transparent)"
+			/>
+			<div
+				class="absolute bottom-0 left-[-120px] h-72 w-72 rounded-full blur-3xl"
+				style="background: radial-gradient(closest-side, rgba(148,163,184,.25), transparent)"
+			/>
+		</div>
+
 		<!-- Header -->
-		<div class="flex items-center justify-between p-4 border-b border-border">
-			<button
-				@click="goBack"
-				class="p-2 hover:bg-accent rounded-lg transition-colors"
-			>
-				<svg class="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-				</svg>
-			</button>
-			<h1 class="text-lg font-semibold text-foreground">Вход</h1>
-			<div class="w-10"></div> <!-- Spacer -->
-		</div>
-		
-		<!-- Content -->
-		<div class="flex-1 px-6 py-8">
-			<!-- Phone Number Step -->
-			<div v-if="authState.loginState.step === 'phone'" class="space-y-6">
-				<div class="text-center">
-					<h2 class="text-2xl font-bold text-foreground mb-2">
-						Добро пожаловать!
-					</h2>
-					<p class="text-muted-foreground">
-						Введите номер телефона для входа в систему
-					</p>
-				</div>
-				
-				<form @submit.prevent="handleLogin" class="space-y-6">
-					<app-input
-						:modelValue="phoneNumber"
-						@update:modelValue="handlePhoneInput"
-						label="Номер телефона"
-						placeholder="+7 (___) ___-__-__"
-						type="tel"
-						inputmode="tel"
-						pattern="[+7-0-9]*"
-						required
-						:error="authState.error.value || undefined"
-						hint="Формат: +7 или 8 с 10 цифрами (например: +77771234567)"
-					/>
-					
-					<app-button
-						type="submit"
-						:loading="authState.isLoading.value"
-						:disabled="!isValidPhone"
-						full-width
-						size="lg"
+		<header class="px-5 pt-4">
+			<div class="mx-auto max-w-sm flex items-center justify-between">
+				<button
+					@click="goBack"
+					class="h-10 w-10 inline-grid place-items-center rounded-xl border border-slate-200 bg-white/80 hover:bg-white transition"
+					aria-label="Назад"
+				>
+					<svg
+						class="w-5 h-5 text-slate-700"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
 					>
-						Получить код
-					</app-button>
-				</form>
-			</div>
-			
-			<!-- OTP Step -->
-			<div v-else class="space-y-6">
-				<div class="text-center">
-					<h2 class="text-2xl font-bold text-foreground mb-2">
-						Подтверждение
-					</h2>
-					<p class="text-muted-foreground mb-4">
-						Введите код, отправленный на номер<br>
-						<span class="font-medium text-foreground">{{ authState.loginState.phoneNumber }}</span>
-					</p>
-					<button
-						@click="authState.loginState.step = 'phone'"
-						class="text-lime-600 text-sm hover:underline"
-					>
-						Изменить номер
-					</button>
-				</div>
-				
-				<form @submit.prevent="handleOtpVerification" class="space-y-6">
-					<div class="space-y-4">
-						<label class="block text-sm font-medium text-foreground text-center">
-							Код подтверждения
-						</label>
-						<otp-input
-							v-model="authState.otpCode.value"
-							:length="4"
-							@complete="handleOtpComplete"
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M15 19l-7-7 7-7"
 						/>
-						<p v-if="authState.error.value" class="text-sm text-destructive text-center">
-							{{ authState.error.value }}
-						</p>
-					</div>
-					
-					<app-button
-						type="submit"
-						:loading="authState.isLoading.value"
-						:disabled="authState.otpCode.value.length !== 4"
-						full-width
-						size="lg"
-					>
-						Подтвердить
-					</app-button>
-					
-					<div class="text-center">
-						<button
-							type="button"
-							@click="resendCode"
-							:disabled="resendTimer > 0"
-							class="text-sm text-muted-foreground hover:text-primary disabled:opacity-50"
-						>
-							{{ resendTimer > 0 ? `Отправить повторно через ${resendTimer}с` : 'Отправить код повторно' }}
-						</button>
-					</div>
-				</form>
+					</svg>
+				</button>
+
+				<h1 class="text-xl font-semibold tracking-tight">Вход</h1>
+
+				<div class="h-10 w-10"></div>
 			</div>
-			
-			<!-- Info Section -->
-			<div class="mt-8 p-4 bg-card rounded-lg border border-border">
-				<div class="flex items-start space-x-3">
-					<div class="w-8 h-8 bg-primary/70 rounded-full flex items-center justify-center flex-shrink-0 border border-primary-foreground/10">
-						<svg class="w-4 h-4 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
+		</header>
+
+		<!-- Content -->
+		<main class="px-5 flex items-center justify-center h-[94vh]">
+			<div class="mx-auto max-w-sm">
+				<!-- Card -->
+				<section
+					class="rounded-3xl border border-slate-200 bg-white/80 backdrop-blur p-6 shadow-sm"
+				>
+					<!-- PHONE STEP -->
+					<div
+						v-if="authState.loginState.step === 'phone'"
+						class="space-y-6"
+					>
+						<header class="text-center">
+							<h2 class="text-3xl leading-tight font-bold">Добро пожаловать</h2>
+							<p class="mt-2 text-base text-slate-600">Введите номер телефона, чтобы продолжить</p>
+						</header>
+
+						<form
+							@submit.prevent="handleLogin"
+							class="space-y-5"
+						>
+							<app-input
+								:modelValue="phoneNumber"
+								@update:modelValue="handlePhoneInput"
+								label="Номер телефона"
+								placeholder="+7 777 123 45 67"
+								type="tel"
+								inputmode="tel"
+								pattern="[+7-0-9]*"
+								required
+								class="py-6"
+								:error="authState.error.value || undefined"
+							/>
+
+							<app-button
+								type="submit"
+								:loading="authState.isLoading.value"
+								:disabled="!isValidPhone"
+								full-width
+								size="lg"
+								class="h-12 text-base"
+							>
+								Получить код
+							</app-button>
+						</form>
 					</div>
-					<div>
-						<h3 class="text-sm font-medium text-foreground mb-1">
-							Для демонстрации
-						</h3>
-						<p class="text-xs text-muted-foreground">
-							Используйте код <span class="font-mono bg-muted px-1 rounded">1111</span> для входа
-						</p>
+
+					<!-- OTP STEP -->
+					<div
+						v-else
+						class="space-y-6"
+					>
+						<header class="text-center">
+							<h2 class="text-3xl leading-tight font-bold">Подтверждение</h2>
+							<p class="mt-2 text-base text-slate-600">
+								Мы отправили код на номер<br />
+								<span
+									class="font-semibold text-slate-900"
+									>{{ authState.loginState.phoneNumber }}</span
+								>
+							</p>
+							<button
+								@click="authState.loginState.step = 'phone'"
+								class="mt-2 text-sm text-lime-600 hover:underline"
+							>
+								Изменить номер
+							</button>
+						</header>
+
+						<form
+							@submit.prevent="handleOtpVerification"
+							class="space-y-6"
+						>
+							<div class="space-y-3">
+								<label class="block text-sm font-medium text-slate-900 text-center">
+									Код подтверждения
+								</label>
+								<otp-input
+									v-model="authState.otpCode.value"
+									:length="4"
+									@complete="handleOtpComplete"
+								/>
+								<p
+									v-if="authState.error.value"
+									class="text-sm text-red-600 text-center"
+								>
+									{{ authState.error.value }}
+								</p>
+							</div>
+
+							<app-button
+								type="submit"
+								:loading="authState.isLoading.value"
+								:disabled="authState.otpCode.value.length !== 4"
+								full-width
+								size="lg"
+								class="h-12 text-base"
+							>
+								Подтвердить
+							</app-button>
+
+							<div class="text-center">
+								<button
+									type="button"
+									@click="resendCode"
+									:disabled="resendTimer > 0"
+									class="text-sm font-medium text-slate-600 hover:text-emerald-700 disabled:opacity-50"
+								>
+									{{ resendTimer > 0 ? `Отправить повторно через ${resendTimer}с` : 'Отправить код повторно' }}
+								</button>
+							</div>
+						</form>
+					</div>
+				</section>
+
+				<!-- Tiny demo note -->
+				<div class="mt-5 rounded-2xl border border-slate-200 bg-white/70 backdrop-blur p-4">
+					<div class="flex items-start gap-3">
+						<div class="h-8 w-8 grid place-items-center rounded-xl bg-lime-100 text-lime-700">
+							<svg
+								class="w-4 h-4"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+							>
+								<path
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+								/>
+							</svg>
+						</div>
+						<div class="text-sm">
+							<p class="font-medium">Демо-режим</p>
+							<p class="mt-0.5 text-slate-600">
+								Используйте код
+								<span class="font-mono bg-slate-100 px-1.5 py-0.5 rounded">1111</span> для входа.
+							</p>
+						</div>
 					</div>
 				</div>
+
+				<!-- Footer -->
+				<p class="mt-6 text-center text-sm text-slate-600">
+					Нет аккаунта?
+					<button
+						@click="goToRegister"
+						class="text-lime-600 font-medium hover:underline"
+					>
+						Зарегистрируйтесь
+					</button>
+				</p>
 			</div>
-		</div>
-		
-		<!-- Footer - Only show registration link during phone step -->
-		<div v-if="authState.loginState.step === 'phone'" class="px-6 pb-6 text-center">
-			<p class="text-sm text-muted-foreground">
-				Нет аккаунта?
-				<button @click="goToRegister" class="text-lime-600 hover:underline">
-					Зарегистрируйтесь
-				</button>
-			</p>
-		</div>
+		</main>
 	</div>
 </template>
