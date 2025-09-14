@@ -1,7 +1,11 @@
 import axios from 'axios'
 import { AppConfigService } from 'src/common/config/config.service'
 import { CarAnalysis, CarAnalysisZone } from '@prisma/client'
-import { ClassificationPipelineResult, LLMCarAnalysisResult } from './interfaces'
+import {
+	ClassificationPipelineResult,
+	LLMCarAnalysisResult,
+	isClassificationResultValid,
+} from './interfaces'
 import { mapPipelineResultForLLM } from './utils/pipeline-llm.mapper'
 
 import { Injectable } from '@nestjs/common'
@@ -34,8 +38,23 @@ export class ImageClassificationService {
 		return response.data
 	}
 
+	async callClassificationPipelineMulti(
+		imageBuffers: Buffer[],
+	): Promise<ClassificationPipelineResult[]> {
+		const results: ClassificationPipelineResult[] = []
+		for (const buf of imageBuffers) {
+			try {
+				const single = await this.callClassificationPipeline(buf)
+				if (isClassificationResultValid(single)) results.push(single)
+			} catch {
+				// intentionally ignore single image failure
+			}
+		}
+		return results
+	}
+
 	async analyzeCarWithLLM(
-		pipelineResult: ClassificationPipelineResult,
+		pipelineResult: ClassificationPipelineResult | ClassificationPipelineResult[],
 		userId: number,
 	): Promise<LLMCarAnalysisResult> {
 		// Fetch user info
@@ -56,7 +75,7 @@ export class ImageClassificationService {
 			vin: user.vinNumber || '',
 		}
 
-		// Map pipeline result for LLM
+		// Map pipeline result(s) for LLM
 		const mappedPipelineResult = mapPipelineResultForLLM(pipelineResult)
 
 		const llmResult = await this.llmCarAnalysisAdapter.analyze(

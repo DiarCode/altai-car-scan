@@ -11,6 +11,9 @@ import { SecurityMiddleware } from './common/middleware/security.middleware'
 import { ScheduleModule } from '@nestjs/schedule'
 import { BossModule } from './common/queue/boss.module'
 import { AuthModule } from './modules/auth/auth.module'
+import { S3Module } from './common/s3/s3.module'
+import { CommonModule } from './common/common.module'
+import { ImageClassificationModule } from './modules/image-classification/image-classification.module'
 
 @Module({
 	imports: [
@@ -28,9 +31,12 @@ import { AuthModule } from './modules/auth/auth.module'
 		AppConfigModule,
 		ScheduleModule.forRoot(),
 		BossModule,
+		S3Module,
+		CommonModule,
 		PrismaModule,
 		// authentication
 		AuthModule,
+		ImageClassificationModule,
 	],
 })
 export class AppModule implements NestModule {

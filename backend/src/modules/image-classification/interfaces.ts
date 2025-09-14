@@ -27,6 +27,8 @@ export interface ClassificationPipelineResult {
 	seg_source: string
 }
 
+export type MultiImageClassificationResult = ClassificationPipelineResult[]
+
 export interface LLMCarZoneAnalysis {
 	name: string
 	breaking: boolean
@@ -74,6 +76,13 @@ export function isClassificationResultValid(obj: any): obj is ClassificationPipe
 		Array.isArray(damage)
 	)
 }
+
+export function isMultiClassificationResultValid(obj: any): obj is MultiImageClassificationResult {
+	return Array.isArray(obj) && obj.every(isClassificationResultValid)
+}
+
+export const CAR_IMAGE_ANGLES = ['front', 'back', 'left', 'right'] as const
+export type CarImageAngle = (typeof CAR_IMAGE_ANGLES)[number]
 
 export function isLLMCarAnalysisResultValid(obj: unknown): obj is LLMCarAnalysisResult {
 	if (typeof obj !== 'object' || obj === null) return false

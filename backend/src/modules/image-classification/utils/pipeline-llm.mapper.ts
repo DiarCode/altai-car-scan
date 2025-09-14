@@ -1,7 +1,7 @@
 // Utility to map raw pipeline result to a more LLM-friendly format
 import { ClassificationPipelineResult } from '../interfaces'
 
-export function mapPipelineResultForLLM(result: ClassificationPipelineResult): Record<string, any> {
+function mapSingle(result: ClassificationPipelineResult) {
 	return {
 		angle: result.angle,
 		severity: result.severity_image.label,
@@ -19,4 +19,13 @@ export function mapPipelineResultForLLM(result: ClassificationPipelineResult): R
 		})),
 		seg_source: result.seg_source,
 	}
+}
+
+export function mapPipelineResultForLLM(
+	result: ClassificationPipelineResult | ClassificationPipelineResult[],
+): Record<string, any> {
+	if (Array.isArray(result)) {
+		return { images: result.map(r => mapSingle(r)) }
+	}
+	return mapSingle(result)
 }
