@@ -22,7 +22,7 @@ CREATE TABLE "CarAnalysis" (
     "totalEstimatedCost" INTEGER NOT NULL,
     "overallScore" INTEGER NOT NULL DEFAULT 0,
     "status" "CarStatus" NOT NULL DEFAULT 'EXCELLENT',
-    "summary" TEXT,
+    "summary" TEXT NOT NULL,
 
     CONSTRAINT "CarAnalysis_pkey" PRIMARY KEY ("id")
 );
@@ -39,7 +39,7 @@ CREATE TABLE "CarAnalysisZone" (
     "consequences" TEXT[],
     "estimatedCost" INTEGER NOT NULL,
     "urgency" "URGENCY" NOT NULL,
-    "timeToFix" TEXT,
+    "timeToFix" TEXT NOT NULL,
 
     CONSTRAINT "CarAnalysisZone_pkey" PRIMARY KEY ("id")
 );

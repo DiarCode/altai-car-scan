@@ -10,7 +10,7 @@ model CarAnalysis {
   totalEstimatedCost Int
   overallScore      Int                @default(0)
   status            CarStatus          @default(EXCELLENT)
-  summary           String?            @db.Text
+  summary           String             @db.Text
   zones             CarAnalysisZone[]
 }
 
@@ -26,7 +26,7 @@ model CarAnalysisZone {
   consequences String[]
   estimatedCost Int
   urgency      URGENCY
-  timeToFix    String?
+  timeToFix    String
 }
 datasource db {
   provider = "postgresql"

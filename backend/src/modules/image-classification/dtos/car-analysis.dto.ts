@@ -17,7 +17,7 @@ export class CarAnalysisZoneDto {
 		consequences: string[]
 		estimatedCost: number
 		urgency: URGENCY
-		timeToFix: string | null
+		timeToFix: string
 	}
 }
 
@@ -31,7 +31,7 @@ export class CarAnalysisDto {
 	totalEstimatedCost: number
 	overallScore: number
 	status: CarStatus
-	summary?: string
+	summary: string
 	zones: CarAnalysisZoneDto[]
 }
 
@@ -45,8 +45,8 @@ export function fromModel(model: CarAnalysisWithZones): CarAnalysisDto {
 		createdAt: model.createdAt,
 		totalEstimatedCost: model.totalEstimatedCost,
 		overallScore: model.overallScore ?? 0,
-		status: model.status ?? 'EXCELLENT',
-		summary: model.summary || undefined,
+		status: model.status ?? CarStatus.EXCELLENT,
+		summary: model.summary,
 		zones: (model.zones || []).map(z => ({
 			name: ensureZoneName(z.name),
 			breaking: z.breaking,
@@ -57,7 +57,7 @@ export function fromModel(model: CarAnalysisWithZones): CarAnalysisDto {
 				consequences: z.consequences,
 				estimatedCost: z.estimatedCost,
 				urgency: ensureUrgencyEnum(z.urgency),
-				timeToFix: z.timeToFix,
+				timeToFix: z.timeToFix || '1-2 дня',
 			},
 		})),
 	}

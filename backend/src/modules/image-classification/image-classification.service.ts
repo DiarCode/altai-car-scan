@@ -99,8 +99,16 @@ export class ImageClassificationService {
 					...z.aiAnalysis,
 					importance: ensureImportance(z.aiAnalysis.importance),
 					urgency: ensureUrgency(z.aiAnalysis.urgency),
+					timeToFix:
+						z.aiAnalysis.timeToFix && z.aiAnalysis.timeToFix.trim().length > 0
+							? z.aiAnalysis.timeToFix
+							: '1-2 дня',
 				},
 			})),
+		}
+		// Guarantee summary present
+		if (!llmResult.summary || llmResult.summary.trim().length === 0) {
+			llmResult.summary = 'Краткое резюме недоступно: повторите анализ позже.'
 		}
 
 		// Save to DB
@@ -146,7 +154,7 @@ export class ImageClassificationService {
 					consequences: z.consequences,
 					estimatedCost: z.estimatedCost,
 					urgency: ensureUrgency(z.urgency),
-					timeToFix: z.timeToFix,
+					timeToFix: z.timeToFix || '1-2 дня',
 				},
 			})),
 		}
