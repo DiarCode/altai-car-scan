@@ -51,6 +51,8 @@ export interface LLMCarAnalysisResult {
 	vin: string
 	createdAt: string | Date
 	totalEstimatedCost: number
+	overallScore: number // 0-100
+	status: string // mapped to Prisma enum CarStatus
 	zones: LLMCarZoneAnalysis[]
 }
 
@@ -95,6 +97,10 @@ export function isLLMCarAnalysisResultValid(obj: unknown): obj is LLMCarAnalysis
 		typeof candidate.vin === 'string' &&
 		(typeof candidate.createdAt === 'string' || candidate.createdAt instanceof Date) &&
 		typeof candidate.totalEstimatedCost === 'number' &&
+		typeof candidate.overallScore === 'number' &&
+		candidate.overallScore >= 0 &&
+		candidate.overallScore <= 100 &&
+		typeof candidate.status === 'string' &&
 		Array.isArray(candidate.zones)
 	)
 }

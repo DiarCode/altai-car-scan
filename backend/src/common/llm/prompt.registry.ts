@@ -18,6 +18,11 @@ export class PromptRegistry {
 		- Assess the importance, consequences, estimated cost, urgency, and time to fix for each issue.
 		- Ensure your output is accurate, realistic, and useful for both car owners and service professionals.
 		- The content must be on Russian language. Extensive and easy to understand.
+		- You MUST use ONLY the following enum values exactly (uppercase snake case) when populating fields:
+		  * importance: CRITICAL | MODERATE | MINOR
+		  * urgency: LOW | MEDIUM | HIGH
+		  * status (overall car status): EXCELLENT | COSMETIC_ISSUES | MECHANICAL_SERVICE_NEEDED | CRITICAL_CONDITION
+		- Provide an overallScore (0-100 integer) reflecting the general technical & cosmetic condition (100 = идеально новое, 0 = крайне аварийное состояние).
 					`,
 			user: `
 		Car Information:
@@ -41,7 +46,7 @@ export class PromptRegistry {
 				 - Urgency (string, e.g. "low", "medium", "high")
 				 - Time to fix (string or null, e.g. "2 days", "1 week", or null if unknown)
 		2. Calculate the total estimated cost for all zones.
-		3. Return a single JSON object with the following structure:
+		3. Return a single JSON object with the following structure (ALL enum strings must match exactly the allowed values):
 		{
 			id: number, // unique analysis id (use a random or sequential number)
 			carModel: string,
@@ -50,6 +55,8 @@ export class PromptRegistry {
 			vin: string,
 			createdAt: string, // ISO date string
 			totalEstimatedCost: number, // tenge
+			overallScore: number, // 0-100
+			status: string, // EXCELLENT | COSMETIC_ISSUES | MECHANICAL_SERVICE_NEEDED | CRITICAL_CONDITION
 			zones: [
 				{
 					name: string, // zone name
@@ -57,17 +64,17 @@ export class PromptRegistry {
 					hasRust: boolean,
 					isDirty: boolean,
 					aiAnalysis: {
-						importance: string,
+						importance: string, // CRITICAL | MODERATE | MINOR
 						consequences: string[],
 						estimatedCost: number,
-						urgency: string,
+						urgency: string, // LOW | MEDIUM | HIGH
 						timeToFix: string | null
 					}
 				}
 			]
 		}
 
-		example output:
+		example output (values illustrative):
 		{
 			"id": 1,
 			"carModel": "Toyota Camry",
@@ -76,6 +83,8 @@ export class PromptRegistry {
 			"vin": "VIN1232",
 			"createdAt": "2025-09-12T14:30:00Z",
 			"totalEstimatedCost": 850000,
+			"overallScore": 72,
+			"status": "MECHANICAL_SERVICE_NEEDED",
 			"zones": [
 				{
 				"name": "Передняя",
@@ -83,13 +92,13 @@ export class PromptRegistry {
 				"hasRust": true,
 				"isDirty": true,
 				"aiAnalysis": {
-					"importance": "Передняя часть критически важна для безопасности и торможения.",
+					"importance": "CRITICAL",
 					"consequences": [
 						"Снижение эффективности торможения",
 						"Риск аварийных ситуаций"
 					],
 					"estimatedCost": 450000,
-					"urgency": "high",
+					"urgency": "HIGH",
 					"timeToFix": "2-3 дня"
 					}
 				},

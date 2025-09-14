@@ -7,10 +7,10 @@ export class CarAnalysisZoneDto {
 	hasRust: boolean
 	isDirty: boolean
 	aiAnalysis: {
-		importance: string
+		importance: string // IMPORTANCE enum
 		consequences: string[]
 		estimatedCost: number
-		urgency: string
+		urgency: string // URGENCY enum
 		timeToFix: string | null
 	}
 
@@ -30,6 +30,8 @@ export class CarAnalysisDto {
 	vin: string
 	createdAt: string | Date
 	totalEstimatedCost: number
+	overallScore: number
+	status: string
 	zones: CarAnalysisZoneDto[]
 }
 
@@ -42,6 +44,8 @@ export function fromModel(model: CarAnalysis): CarAnalysisDto {
 		vin: model.vin,
 		createdAt: model.createdAt,
 		totalEstimatedCost: model.totalEstimatedCost,
+		overallScore: model.overallScore ?? 0,
+		status: model.status ?? 'EXCELLENT',
 		zones: ((model as CarAnalysis & { zones?: LLMCarZoneAnalysis[] }).zones || []).map(zone =>
 			CarAnalysisZoneDto.fromModel(zone),
 		),

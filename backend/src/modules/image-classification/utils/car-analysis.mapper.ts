@@ -11,6 +11,8 @@ export class CarAnalysisMapper {
 			vin: model.vin,
 			createdAt: model.createdAt,
 			totalEstimatedCost: model.totalEstimatedCost,
+			overallScore: model.overallScore ?? 0,
+			status: model.status ?? 'EXCELLENT',
 			zones: (model.zones || []).map(zone => ({
 				name: zone.name,
 				breaking: zone.breaking,

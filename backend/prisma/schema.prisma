@@ -8,6 +8,8 @@ model CarAnalysis {
   vin               String
   createdAt         DateTime           @default(now())
   totalEstimatedCost Int
+  overallScore      Int                @default(0)
+  status            CarStatus          @default(EXCELLENT)
   zones             CarAnalysisZone[]
 }
 
@@ -19,10 +21,10 @@ model CarAnalysisZone {
   breaking     Boolean
   hasRust      Boolean
   isDirty      Boolean
-  importance   String
+  importance   IMPORTANCE
   consequences String[]
   estimatedCost Int
-  urgency      String
+  urgency      URGENCY
   timeToFix    String?
 }
 datasource db {
@@ -83,6 +85,25 @@ enum SERVICE_TYPE {
   TIRE_SERVICE
   DIAGNOSTICS
   OTHER
+}
+
+enum CarStatus {
+  EXCELLENT
+  COSMETIC_ISSUES
+  MECHANICAL_SERVICE_NEEDED
+  CRITICAL_CONDITION
+}
+
+enum URGENCY {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum IMPORTANCE {
+  CRITICAL
+  MODERATE
+  MINOR
 }
 
 model InDrivePartner {
