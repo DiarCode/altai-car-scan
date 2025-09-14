@@ -32,9 +32,24 @@
 
 ![1757867182788](images/README/1757867182788.png)
 
-### Машинное Обучение
+### Как запустить модель
 
 Модель машинного обучения, являющаяся основой Altai CarScan, размещена на платформе [Modal Labs](https://modal.com/ "null"). Она отвечает за обработку изображений, полученных во время сканирования, и за точное определение потенциальных проблем с автомобилем.
+
+Эндпоинт модели:
+
+`https://maulerrr--indrive-quality-analyze-bytes.modal.run`
+
+Пример запроса
+
+```
+    POST raw bytes (image/jpeg or application/octet-stream) to the root of the endpoint host.
+    curl --http1.1 -X POST -H "Content-Type: application/octet-stream" \
+      --data-binary @example.jpg "https://maulerrr--indrive-quality-analyze-bytes.modal.run"
+
+    POST multipart/form-data with field 'file' to the root of this endpoint host.
+    curl --http1.1 -X POST -F "file=@example.jpg" "https://maulerrr--indrive-quality-analyze-bytes.modal.run"
+```
 
 ### Как Запустить Проект
 
