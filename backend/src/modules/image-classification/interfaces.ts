@@ -30,7 +30,7 @@ export interface ClassificationPipelineResult {
 export type MultiImageClassificationResult = ClassificationPipelineResult[]
 
 export interface LLMCarZoneAnalysis {
-	name: string
+	name: ZoneName
 	breaking: boolean
 	hasRust: boolean
 	isDirty: boolean
@@ -43,6 +43,12 @@ export interface LLMCarZoneAnalysis {
 	}
 }
 
+export type ZoneName = 'Передняя' | 'Левая' | 'Правая' | 'Задняя'
+export const ZONE_NAME_VALUES: ZoneName[] = ['Передняя', 'Левая', 'Правая', 'Задняя']
+export function isZoneName(v: unknown): v is ZoneName {
+	return typeof v === 'string' && (ZONE_NAME_VALUES as string[]).includes(v)
+}
+
 export interface LLMCarAnalysisResult {
 	id: number
 	carModel: string
@@ -51,7 +57,14 @@ export interface LLMCarAnalysisResult {
 	vin: string
 	createdAt: string | Date
 	totalEstimatedCost: number
+	overallScore: number // 0-100
+	status: string // mapped to Prisma enum CarStatus
 	zones: LLMCarZoneAnalysis[]
+}
+
+// Prisma composite return type helper
+export type CarAnalysisWithZones = import('@prisma/client').CarAnalysis & {
+	zones: import('@prisma/client').CarAnalysisZone[]
 }
 
 // Type guards
@@ -95,6 +108,52 @@ export function isLLMCarAnalysisResultValid(obj: unknown): obj is LLMCarAnalysis
 		typeof candidate.vin === 'string' &&
 		(typeof candidate.createdAt === 'string' || candidate.createdAt instanceof Date) &&
 		typeof candidate.totalEstimatedCost === 'number' &&
+		typeof candidate.overallScore === 'number' &&
+		candidate.overallScore >= 0 &&
+		candidate.overallScore <= 100 &&
+		typeof candidate.status === 'string' &&
 		Array.isArray(candidate.zones)
 	)
+}
+
+// Narrow helpers (pure functions) to sanitize external / model data
+const IMPORTANCE_VALUES = ['CRITICAL', 'MODERATE', 'MINOR'] as const
+const URGENCY_VALUES = ['LOW', 'MEDIUM', 'HIGH'] as const
+const STATUS_VALUES = [
+	'EXCELLENT',
+	'COSMETIC_ISSUES',
+	'MECHANICAL_SERVICE_NEEDED',
+	'CRITICAL_CONDITION',
+] as const
+
+export function ensureZoneName(value: unknown): ZoneName {
+	if (isZoneName(value)) return value
+	const lower = typeof value === 'string' ? value.toLowerCase() : ''
+	const map: Record<string, ZoneName> = {
+		front: 'Передняя',
+		'передняя': 'Передняя',
+		back: 'Задняя',
+		задняя: 'Задняя',
+		rear: 'Задняя',
+		left: 'Левая',
+		левая: 'Левая',
+		right: 'Правая',
+		правая: 'Правая',
+	}
+	return map[lower] || 'Передняя'
+}
+
+export function ensureImportance(value: unknown): string {
+	const v = typeof value === 'string' ? value.toUpperCase() : ''
+	return (IMPORTANCE_VALUES as readonly string[]).includes(v) ? v : 'MINOR'
+}
+
+export function ensureUrgency(value: unknown): string {
+	const v = typeof value === 'string' ? value.toUpperCase() : ''
+	return (URGENCY_VALUES as readonly string[]).includes(v) ? v : 'LOW'
+}
+
+export function ensureStatus(value: unknown): string {
+	const v = typeof value === 'string' ? value.toUpperCase() : ''
+	return (STATUS_VALUES as readonly string[]).includes(v) ? v : 'EXCELLENT'
 }

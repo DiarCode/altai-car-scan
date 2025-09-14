@@ -1,6 +1,15 @@
 -- CreateEnum
 CREATE TYPE "SERVICE_TYPE" AS ENUM ('REPAIR', 'MAINTENANCE', 'WASHING', 'TIRE_SERVICE', 'DIAGNOSTICS', 'OTHER');
 
+-- CreateEnum
+CREATE TYPE "CarStatus" AS ENUM ('EXCELLENT', 'COSMETIC_ISSUES', 'MECHANICAL_SERVICE_NEEDED', 'CRITICAL_CONDITION');
+
+-- CreateEnum
+CREATE TYPE "URGENCY" AS ENUM ('LOW', 'MEDIUM', 'HIGH');
+
+-- CreateEnum
+CREATE TYPE "IMPORTANCE" AS ENUM ('CRITICAL', 'MODERATE', 'MINOR');
+
 -- CreateTable
 CREATE TABLE "CarAnalysis" (
     "id" SERIAL NOT NULL,
@@ -11,6 +20,8 @@ CREATE TABLE "CarAnalysis" (
     "vin" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "totalEstimatedCost" INTEGER NOT NULL,
+    "overallScore" INTEGER NOT NULL DEFAULT 0,
+    "status" "CarStatus" NOT NULL DEFAULT 'EXCELLENT',
 
     CONSTRAINT "CarAnalysis_pkey" PRIMARY KEY ("id")
 );
@@ -23,10 +34,10 @@ CREATE TABLE "CarAnalysisZone" (
     "breaking" BOOLEAN NOT NULL,
     "hasRust" BOOLEAN NOT NULL,
     "isDirty" BOOLEAN NOT NULL,
-    "importance" TEXT NOT NULL,
+    "importance" "IMPORTANCE" NOT NULL,
     "consequences" TEXT[],
     "estimatedCost" INTEGER NOT NULL,
-    "urgency" TEXT NOT NULL,
+    "urgency" "URGENCY" NOT NULL,
     "timeToFix" TEXT,
 
     CONSTRAINT "CarAnalysisZone_pkey" PRIMARY KEY ("id")

@@ -1,10 +1,14 @@
 import axios from 'axios'
 import { AppConfigService } from 'src/common/config/config.service'
-import { CarAnalysis, CarAnalysisZone } from '@prisma/client'
+import { CarAnalysis, CarAnalysisZone, CarStatus, IMPORTANCE, URGENCY } from '@prisma/client'
 import {
 	ClassificationPipelineResult,
 	LLMCarAnalysisResult,
 	isClassificationResultValid,
+	ensureZoneName,
+	ensureImportance,
+	ensureUrgency,
+	ensureStatus,
 } from './interfaces'
 import { mapPipelineResultForLLM } from './utils/pipeline-llm.mapper'
 
@@ -77,12 +81,27 @@ export class ImageClassificationService {
 		// Map pipeline result(s) for LLM
 		const mappedPipelineResult = mapPipelineResultForLLM(pipelineResult)
 
-		const llmResult = await this.llmCarAnalysisAdapter.analyze(
+		let llmResult = await this.llmCarAnalysisAdapter.analyze(
 			mappedPipelineResult,
 			userId,
 			carInfo,
 			partners,
 		)
+
+		// Normalize & sanitize enums
+		llmResult = {
+			...llmResult,
+			status: ensureStatus(llmResult.status),
+			zones: llmResult.zones.map(z => ({
+				...z,
+				name: ensureZoneName(z.name),
+				aiAnalysis: {
+					...z.aiAnalysis,
+					importance: ensureImportance(z.aiAnalysis.importance),
+					urgency: ensureUrgency(z.aiAnalysis.urgency),
+				},
+			})),
+		}
 
 		// Save to DB
 		const created = await this.prisma.carAnalysis.create({
@@ -93,16 +112,18 @@ export class ImageClassificationService {
 				city: llmResult.city,
 				vin: llmResult.vin,
 				totalEstimatedCost: llmResult.totalEstimatedCost,
+				overallScore: llmResult.overallScore,
+				status: llmResult.status as CarStatus,
 				zones: {
 					create: llmResult.zones.map(z => ({
 						name: z.name,
 						breaking: z.breaking,
 						hasRust: z.hasRust,
 						isDirty: z.isDirty,
-						importance: z.aiAnalysis.importance,
+						importance: z.aiAnalysis.importance as IMPORTANCE,
 						consequences: z.aiAnalysis.consequences,
 						estimatedCost: z.aiAnalysis.estimatedCost,
-						urgency: z.aiAnalysis.urgency,
+						urgency: z.aiAnalysis.urgency as URGENCY,
 						timeToFix: z.aiAnalysis.timeToFix,
 					})),
 				},
@@ -114,15 +135,15 @@ export class ImageClassificationService {
 			id: created.id,
 			createdAt: created.createdAt,
 			zones: created.zones.map(z => ({
-				name: z.name,
+				name: ensureZoneName(z.name),
 				breaking: z.breaking,
 				hasRust: z.hasRust,
 				isDirty: z.isDirty,
 				aiAnalysis: {
-					importance: z.importance,
+					importance: ensureImportance(z.importance),
 					consequences: z.consequences,
 					estimatedCost: z.estimatedCost,
-					urgency: z.urgency,
+					urgency: ensureUrgency(z.urgency),
 					timeToFix: z.timeToFix,
 				},
 			})),
@@ -135,6 +156,24 @@ export class ImageClassificationService {
 		return await this.prisma.carAnalysis.findFirst({
 			where: { userId },
 			orderBy: { createdAt: 'desc' },
+			include: { zones: true },
+		})
+	}
+
+	async getAllAnalyses(userId: number): Promise<Array<CarAnalysis & { zones: CarAnalysisZone[] }>> {
+		return this.prisma.carAnalysis.findMany({
+			where: { userId },
+			orderBy: { createdAt: 'desc' },
+			include: { zones: true },
+		})
+	}
+
+	async getAnalysisById(
+		userId: number,
+		analysisId: number,
+	): Promise<(CarAnalysis & { zones: CarAnalysisZone[] }) | null> {
+		return this.prisma.carAnalysis.findFirst({
+			where: { id: analysisId, userId },
 			include: { zones: true },
 		})
 	}
