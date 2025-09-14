@@ -26,12 +26,14 @@ export interface AuthResponse {
 }
 
 export interface User {
-	id: string
-	phoneNumber: string
+	id: number
 	name: string
+	phoneNumber: string
 	carModel: string
 	carYear: number
 	carColor: string
-	carVin: string
-	city: KazakhstanCity
+	vinNumber: string
+	city: string
+	createdAt: Date
+	updatedAt: Date
 }

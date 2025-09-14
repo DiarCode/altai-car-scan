@@ -1,10 +1,10 @@
 <template>
-	<div class="min-h-screen bg-slate-100 text-slate-900">
+	<div class="bg-slate-100 min-h-screen text-slate-900">
 		<!-- Sticky glass header -->
 		<header
-			class="sticky top-0 z-30 px-5 py-4 bg-white/70 backdrop-blur-md border-b border-slate-200"
+			class="top-0 z-30 sticky bg-white/70 backdrop-blur-md px-5 py-4 border-slate-200 border-b"
 		>
-			<div class="flex items-center justify-between">
+			<div class="flex justify-between items-center">
 				<Button
 					size="icon"
 					variant="ghost"
@@ -13,7 +13,7 @@
 					<ArrowLeft class="size-6 text-slate-700" />
 				</Button>
 
-				<h1 class="text-lg font-semibold tracking-tight">
+				<h1 class="font-semibold text-lg tracking-tight">
 					{{ currentStep === 'select' ? 'Выберите зону' : zones.find(z => z.key === selectedZone)?.title }}
 				</h1>
 
@@ -24,8 +24,8 @@
 						:key="z.key"
 						:class="[
               'w-2 h-2 rounded-full transition-all',
-              capturedZones.includes(z.key) ? 'bg-lime-600'
-                : selectedZone === z.key ? 'bg-lime-600'
+              capturedKeys.includes(z.key) ? 'bg-emerald-600'
+                : selectedZone === z.key ? 'bg-emerald-500'
                 : 'bg-slate-300'
             ]"
 					/>
@@ -36,49 +36,76 @@
 		<!-- Step: select zone -->
 		<section
 			v-if="currentStep === 'select'"
-			class="px-5 pb-[calc(env(safe-area-inset-bottom)+6rem)] space-y-5 mt-4"
+			class="pb-[calc(env(safe-area-inset-bottom)+7.5rem)] space-y-5 mt-4 px-5"
 		>
 			<div class="space-y-3">
 				<button
 					v-for="z in zones"
 					:key="z.key"
 					@click="selectZone(z.key)"
-					class="w-full rounded-3xl bg-white/60 backdrop-blur-xl border border-slate-200 px-4 py-6 text-left hover:bg-white transition-colors"
+					class="bg-white/60 hover:bg-white backdrop-blur-xl px-4 py-5 border border-slate-200 rounded-3xl w-full text-left transition-colors"
 				>
-					<div class="flex items-center justify-between">
-						<div class="flex items-center gap-4">
-							<component
-								:is="z.icon"
-								class="size-7 text-lime-600"
+					<div class="flex justify-between items-center">
+						<div class="flex items-center gap-4 min-w-0">
+							<img
+								:src="z.icon"
+								:alt="`${z.title}`"
+								class="bg-slate-50 border border-slate-200 rounded-xl size-18 object-contain"
 							/>
-							<div>
-								<h3 class="text-lg font-semibold">{{ z.title }}</h3>
-								<p class="text-sm text-slate-600">{{ z.description }}</p>
+							<div class="min-w-0">
+								<h3 class="font-semibold text-lg truncate">
+									{{ z.title }}
+								</h3>
+								<p class="text-slate-600 text-sm truncate">{{ z.description }}</p>
 							</div>
 						</div>
-						<CheckCircle2
-							v-if="capturedZones.includes(z.key)"
-							class="size-7 text-lime-600"
-						/>
-						<ChevronRight
-							v-else
-							class="size-6 text-slate-400"
-						/>
+
+						<div class="flex items-center gap-3">
+							<img
+								v-if="thumbByZone[z.key]"
+								alt=""
+								class="border border-slate-200 rounded-md w-12 h-9 object-cover"
+							/>
+							<CheckCircle2
+								v-if="capturedKeys.includes(z.key)"
+								class="size-6 text-emerald-600"
+							/>
+							<ChevronRight
+								v-else
+								class="size-6 text-slate-400"
+							/>
+						</div>
 					</div>
 				</button>
 			</div>
 
-			<button
-				v-if="capturedZones.length === 4"
-				class="w-full mt-4 rounded-2xl bg-primary hover:bg-primary/80 text-white font-semibold py-3"
-				@click="completeScanning"
+			<!-- Submit (enabled if at least one shot) -->
+			<div
+				class="right-0 bottom-0 pb-[calc(env(safe-area-inset-bottom)+12px)] left-0 z-20 fixed bg-white/80 backdrop-blur px-5 pt-3 border-slate-200 border-t"
 			>
-				Завершить сканирование
-			</button>
+				<Button
+					class="w-full h-12"
+					:disabled="!canSubmit || isPending"
+					@click="submitAnalysis"
+				>
+					<template v-if="!isPending"> Отправить на анализ ({{ capturedCount }}/4) </template>
+					<template v-else>
+						<span class="inline-flex items-center gap-2">
+							<span class="relative flex size-4">
+								<span
+									class="inline-flex absolute bg-primary opacity-30 rounded-full w-full h-full animate-ping"
+								></span>
+								<span class="inline-flex relative bg-primary rounded-full w-4 h-4"></span>
+							</span>
+							Загрузка {{ progress }}%
+						</span>
+					</template>
+				</Button>
+			</div>
 
-			<div class="mt-4 rounded-2xl bg-white/70 backdrop-blur border border-slate-200 p-4">
-				<p class="text-sm text-slate-600">
-					Сфотографируйте все 4 зоны. Совмещайте авто с прозрачной схемой на экране.
+			<div class="bg-white/70 backdrop-blur mt-1 p-4 border border-slate-200 rounded-2xl">
+				<p class="text-slate-600 text-sm">
+					Снимите 4 зоны. Совмещайте авто с прозрачной схемой. Чем ровнее — тем точнее анализ.
 				</p>
 			</div>
 		</section>
@@ -86,7 +113,7 @@
 		<!-- Step: live camera -->
 		<section
 			v-else-if="currentStep === 'camera'"
-			class="flex flex-col h-[calc(100vh-64px)]"
+			class="flex flex-col h-[75vh]"
 		>
 			<div class="relative flex-1 overflow-hidden">
 				<!-- Live video -->
@@ -95,7 +122,7 @@
 					autoplay
 					playsinline
 					muted
-					class="absolute inset-0 w-full h-full object-cover bg-slate-200"
+					class="absolute inset-0 bg-slate-200 w-full h-full object-cover"
 				/>
 
 				<!-- PNG overlay for alignment -->
@@ -103,21 +130,21 @@
 					v-if="overlaySrc"
 					:src="overlaySrc"
 					alt="overlay"
-					class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-80"
+					class="absolute inset-0 opacity-85 w-full h-full object-contain pointer-events-none"
 				/>
 
 				<!-- Soft grid (CSS only) -->
 				<div class="absolute inset-0 pointer-events-none">
-					<div class="absolute inset-y-0 left-1/3 w-px bg-primary/15"></div>
-					<div class="absolute inset-y-0 left-2/3 w-px bg-primary/15"></div>
-					<div class="absolute inset-x-0 top-1/3 h-px bg-primary/15"></div>
-					<div class="absolute inset-x-0 top-2/3 h-px bg-primary/15"></div>
+					<div class="left-1/3 absolute inset-y-0 bg-primary/15 w-px"></div>
+					<div class="left-2/3 absolute inset-y-0 bg-primary/15 w-px"></div>
+					<div class="top-1/3 absolute inset-x-0 bg-primary/15 h-px"></div>
+					<div class="top-2/3 absolute inset-x-0 bg-primary/15 h-px"></div>
 				</div>
 
 				<!-- Tip -->
-				<div class="absolute bottom-28 left-4 right-4">
+				<div class="right-4 bottom-28 left-4 absolute">
 					<div
-						class="bg-white/80 backdrop-blur px-4 py-2 rounded-xl border border-slate-200 text-center text-sm text-slate-800"
+						class="bg-white/90 backdrop-blur px-4 py-2 border border-slate-200 rounded-xl text-slate-800 text-sm text-center"
 					>
 						{{ currentInstruction }}
 					</div>
@@ -126,18 +153,25 @@
 				<!-- Error overlay -->
 				<div
 					v-if="errorMsg"
-					class="absolute inset-0 grid place-items-center bg-white/85 backdrop-blur text-center px-6"
+					class="absolute inset-0 place-items-center grid bg-white/85 backdrop-blur px-6 text-center"
 				>
-					<div>
-						<p class="text-sm text-slate-700">{{ errorMsg }}</p>
+					<div class="space-y-3">
+						<p class="text-slate-700 text-sm">{{ errorMsg }}</p>
 						<Button @click="initCamera"><Camera class="w-4 h-4" /> Включить камеру</Button>
 					</div>
 				</div>
 			</div>
 
 			<!-- Controls -->
-			<div class="px-5 py-4 bg-white/80 backdrop-blur-md border-t border-slate-200">
-				<div class="flex justify-center">
+			<div class="bg-white/80 backdrop-blur-md px-5 py-4 border-slate-200 border-t">
+				<div class="flex justify-between items-center">
+					<Button
+						variant="outline"
+						class="px-4"
+						@click="handleBack"
+						>Отмена</Button
+					>
+
 					<button
 						:disabled="!streamReady"
 						@click="capturePhoto"
@@ -150,13 +184,18 @@
 						<Camera class="w-6 h-6" />
 					</button>
 
-					<button
+					<Button
 						v-if="hasMultipleCameras"
-						class="px-5 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-medium hover:bg-slate-50"
+						variant="outline"
+						class="px-4"
 						@click="switchCamera"
 					>
 						<RotateCcw class="w-5 h-5" />
-					</button>
+					</Button>
+					<div
+						v-else
+						class="w-[84px]"
+					/>
 				</div>
 			</div>
 		</section>
@@ -164,24 +203,24 @@
 		<!-- Step: preview -->
 		<section
 			v-else-if="currentStep === 'preview'"
-			class="px-5 pb-[calc(env(safe-area-inset-bottom)+6rem)] space-y-5"
+			class="pb-[calc(env(safe-area-inset-bottom)+7.5rem)] space-y-5 px-5"
 		>
 			<div
-				class="mt-4 rounded-3xl overflow-hidden bg-white/70 backdrop-blur-xl border border-slate-200"
+				class="bg-white/70 backdrop-blur-xl mt-4 border border-slate-200 rounded-3xl overflow-hidden"
 			>
 				<img
-					:src="capturedPhoto"
+					:src="previewUrl"
 					:alt="`Фото ${zones.find(z => z.key === selectedZone)?.title}`"
-					class="w-full aspect-[4/3] object-cover"
+					class="w-full object-cover aspect-[4/3]"
 				/>
 			</div>
 
-			<div class="rounded-2xl bg-white/70 backdrop-blur border border-slate-200 p-4">
+			<div class="bg-white/70 backdrop-blur p-4 border border-slate-200 rounded-2xl">
 				<div class="flex items-start gap-3">
-					<CheckCircle2 class="w-5 h-5 text-primary mt-0.5" />
+					<CheckCircle2 class="mt-0.5 w-5 h-5 text-primary" />
 					<div>
 						<h3 class="font-semibold">Качество снимка</h3>
-						<p class="text-sm text-slate-700">
+						<p class="text-slate-700 text-sm">
 							Проверьте резкость и совпадение с контуром. При необходимости переснимите.
 						</p>
 					</div>
@@ -189,20 +228,56 @@
 			</div>
 
 			<div class="flex gap-3">
-				<button
-					class="flex-1 px-5 py-3 rounded-xl bg-white border border-slate-200 text-slate-900 font-medium hover:bg-slate-50"
+				<Button
+					variant="outline"
+					class="flex-1"
 					@click="retakePhoto"
+					>Переснять</Button
 				>
-					Переснять
-				</button>
-				<button
-					class="flex-1 px-5 py-3 rounded-xl bg-primary hover:bg-primary/60 text-white font-semibold"
+				<Button
+					class="flex-1"
 					@click="acceptPhoto"
+					>Принять</Button
 				>
-					Принять
-				</button>
 			</div>
 		</section>
+
+		<!-- Upload overlay -->
+		<transition name="fade">
+			<div
+				v-if="isPending"
+				class="z-40 fixed inset-0 place-items-center grid bg-white/70 backdrop-blur px-6"
+			>
+				<div class="bg-white shadow-sm p-5 border border-slate-200 rounded-2xl w-full max-w-sm">
+					<div class="flex justify-between items-center mb-3">
+						<h3 class="font-semibold">Отправка на анализ</h3>
+						<Button
+							size="sm"
+							variant="ghost"
+							@click="cancel"
+							>Отменить</Button
+						>
+					</div>
+
+					<div class="space-y-3">
+						<div class="bg-slate-200 rounded-full w-full h-2 overflow-hidden">
+							<div
+								class="bg-primary h-2 transition-all"
+								:style="{ width: `${progress}%` }"
+							/>
+						</div>
+						<p class="text-slate-600 text-sm">Загружено: {{ progress }}%</p>
+						<p class="text-slate-500 text-xs">Не закрывайте приложение до завершения.</p>
+					</div>
+				</div>
+			</div>
+		</transition>
+
+		<!-- Hidden canvas for fallback capture -->
+		<canvas
+			ref="canvasEl"
+			class="hidden"
+		/>
 	</div>
 </template>
 
@@ -210,29 +285,42 @@
 import { ArrowLeft, Camera, CheckCircle2, ChevronRight, RotateCcw } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { toast } from 'vue-sonner';
 
 
 
-// PNG overlays (replace with your real assets)
+import imgFront from '@/core/assets/images/car-front.png';
+import imgLeft from '@/core/assets/images/car-left.png';
+import imgRear from '@/core/assets/images/car-rear.png';
+import imgRight from '@/core/assets/images/car-right.png';
+/* overlays (replace with your assets) */
 import OverlayFront from '@/core/assets/overlays/front.png';
 import OverlayLeft from '@/core/assets/overlays/left.png';
 import OverlayRear from '@/core/assets/overlays/rear.png';
 import OverlayRight from '@/core/assets/overlays/right.png';
-import { Button } from "@/core/components/ui/button";
+import { Button } from '@/core/components/ui/button';
+
+
+
+/* data layer */
+import { useAnalyzeCarWithProgress } from '../analysis/composables/analysis.composables';
 
 
 
 
 
-// Router
+type ZoneKeyUI = 'front' | 'left' | 'right' | 'rear'
+type ZoneKeyApi = 'front' | 'back' | 'left' | 'right'
+
 const router = useRouter()
 
-// Steps
+/* Steps */
 const currentStep = ref<'select' | 'camera' | 'preview'>('select')
-const selectedZone = ref<'front' | 'left' | 'right' | 'rear' | ''>('')
+const selectedZone = ref<ZoneKeyUI | ''>('')
 
-// Camera state
+/* Camera state */
 const videoEl = ref<HTMLVideoElement | null>(null)
+const canvasEl = ref<HTMLCanvasElement | null>(null)
 const stream = ref<MediaStream | null>(null)
 const streamReady = ref(false)
 const errorMsg = ref('')
@@ -240,19 +328,34 @@ const hasMultipleCameras = ref(false)
 const availableCams = ref<MediaDeviceInfo[]>([])
 const camIndex = ref(0)
 
-// Capture state
-const capturedZones = ref<Array<'front' | 'left' | 'right' | 'rear'>>([])
-const capturedPhoto = ref<string>('')
+/* Capture state */
+const pendingBlob = ref<Blob | null>(null)
+const previewUrl = ref<string>('')
+const filesByZone = ref<Record<ZoneKeyUI, File | null>>({
+  front: null,
+  left: null,
+  right: null,
+  rear: null,
+})
+const thumbs = ref<Record<ZoneKeyUI, string | null>>({
+  front: null,
+  left: null,
+  right: null,
+  rear: null,
+})
 
-// Zones
+/* Composables (upload) */
+const { analyze, progress, cancel, isPending } = useAnalyzeCarWithProgress()
+
+/* Zones */
 const zones = [
-  { key: 'front', title: 'Передняя зона', description: 'Капот, бампер, фары', icon: Camera },
-  { key: 'left',  title: 'Левая сторона', description: 'Двери, крылья, пороги', icon: Camera },
-  { key: 'right', title: 'Правая сторона', description: 'Двери, крылья, пороги', icon: Camera },
-  { key: 'rear',  title: 'Задняя зона',    description: 'Бампер, багажник, фонари', icon: Camera }
+  { key: 'front', title: 'Передняя зона', description: 'Капот, бампер, фары', icon: imgFront },
+  { key: 'left',  title: 'Левая сторона', description: 'Двери, крылья, пороги', icon: imgLeft },
+  { key: 'right', title: 'Правая сторона', description: 'Двери, крылья, пороги', icon: imgRight },
+  { key: 'rear',  title: 'Задняя зона',    description: 'Бампер, багажник, фонари', icon: imgRear },
 ] as const
 
-// Overlay mapping
+/* Derived */
 const overlaySrc = computed(() => {
   switch (selectedZone.value) {
     case 'front': return OverlayFront
@@ -263,7 +366,6 @@ const overlaySrc = computed(() => {
   }
 })
 
-// Instruction
 const currentInstruction = computed(() => {
   switch (selectedZone.value) {
     case 'front': return 'Совместите передний бампер с прозрачной схемой.'
@@ -274,9 +376,13 @@ const currentInstruction = computed(() => {
   }
 })
 
+const capturedKeys = computed(() => (Object.keys(filesByZone.value) as ZoneKeyUI[]).filter(k => filesByZone.value[k]))
+const capturedCount = computed(() => capturedKeys.value.length)
+const canSubmit = computed(() => capturedCount.value > 0)
+const thumbByZone = computed(() => thumbs.value)
 
-// Actions
-function selectZone(z: 'front' | 'left' | 'right' | 'rear') {
+/* Actions */
+function selectZone(z: ZoneKeyUI) {
   selectedZone.value = z
   currentStep.value = 'camera'
   initCamera()
@@ -295,8 +401,8 @@ async function initCamera() {
       video: {
         facingMode: { ideal: 'environment' },
         width: { ideal: 1920 },
-        height: { ideal: 1080 }
-      }
+        height: { ideal: 1080 },
+      },
     }
     stream.value = await navigator.mediaDevices.getUserMedia(constraints)
     if (videoEl.value) {
@@ -310,6 +416,7 @@ async function initCamera() {
   } catch (e) {
     console.error(e)
     errorMsg.value = 'Не удалось получить доступ к камере. Разрешите доступ и попробуйте снова.'
+    toast.error('Камера недоступна', { description: 'Проверьте разрешение на доступ к камере. ' + e })
   }
 }
 
@@ -321,8 +428,10 @@ const handleBack = () => {
     currentStep.value = 'select'
     selectedZone.value = ''
   } else if (currentStep.value === 'preview') {
+    URL.revokeObjectURL(previewUrl.value)
+    previewUrl.value = ''
+    pendingBlob.value = null
     currentStep.value = 'camera'
-    capturedPhoto.value = ''
   }
 }
 
@@ -333,52 +442,115 @@ async function switchCamera() {
   try {
     const s = await navigator.mediaDevices.getUserMedia({
       video: { deviceId: { exact: availableCams.value[camIndex.value].deviceId } },
-      audio: false
+      audio: false,
     })
     stream.value = s
     if (videoEl.value) videoEl.value.srcObject = s
     streamReady.value = true
   } catch (e) {
     console.error('switchCamera error', e)
+    toast.error('Не удалось переключить камеру')
   }
 }
 
-// Capture without canvas (ImageCapture API)
+/* Capture (ImageCapture -> fallback to canvas) */
 async function capturePhoto() {
   if (!stream.value) return
   const track = stream.value.getVideoTracks()[0]
   try {
+    // Preferred: ImageCapture (crisper, faster)
     const ImageCaptureCtor = window.ImageCapture
-    if (!ImageCaptureCtor) throw new Error('ImageCaptureUnsupported')
-
-    const ic = new ImageCaptureCtor(track)
-    const blob: Blob = await ic.takePhoto()
-    capturedPhoto.value = URL.createObjectURL(blob)
+    if (ImageCaptureCtor) {
+      const ic = new ImageCaptureCtor(track)
+      pendingBlob.value = await ic.takePhoto()
+    } else {
+      // Fallback: canvas draw
+      pendingBlob.value = await captureWithCanvas()
+    }
+    // Prepare preview URL
+    if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+    previewUrl.value = URL.createObjectURL(pendingBlob.value as Blob)
 
     stopCamera()
     currentStep.value = 'preview'
   } catch (e) {
     console.error(e)
-    alert('Ваш браузер не поддерживает прямой снимок (ImageCapture). Откройте в современном Chrome/Safari.')
+    toast.error('Не удалось сделать снимок', { description: 'Попробуйте ещё раз или используйте другой браузер.' })
   }
 }
 
+async function captureWithCanvas(): Promise<Blob> {
+  const video = videoEl.value
+  const canvas = canvasEl.value
+  if (!video || !canvas) throw new Error('Canvas fallback unavailable')
+
+  const w = video.videoWidth || 1920
+  const h = video.videoHeight || 1080
+  canvas.width = w
+  canvas.height = h
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('2D context unavailable')
+  ctx.drawImage(video, 0, 0, w, h)
+
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Canvas toBlob failed'))), 'image/jpeg', 0.92)
+  })
+}
+
 function retakePhoto() {
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+  previewUrl.value = ''
+  pendingBlob.value = null
   currentStep.value = 'camera'
   initCamera()
 }
 
 function acceptPhoto() {
-  if (selectedZone.value && !capturedZones.value.includes(selectedZone.value)) {
-    capturedZones.value.push(selectedZone.value)
-  }
+  if (!selectedZone.value || !pendingBlob.value) return
+
+  // Persist file + small thumb
+  const fname = `${selectedZone.value}.jpg`
+  const file = new File([pendingBlob.value], fname, { type: 'image/jpeg' })
+  filesByZone.value[selectedZone.value] = file
+
+  const smallUrl = previewUrl.value // lightweight enough for thumbnail; in prod you can make a reduced version
+  thumbs.value[selectedZone.value] = smallUrl
+
+  // Reset transient preview
+  previewUrl.value = ''
+  pendingBlob.value = null
+
+  // Back to select
   currentStep.value = 'select'
   selectedZone.value = ''
-  capturedPhoto.value = ''
+  toast.success('Снимок сохранён', { description: 'Добавьте остальные стороны для точного анализа.' })
 }
 
-function completeScanning() {
-  router.push({ name: 'analysis-details', params: { id: 'new_scan' } })
+async function submitAnalysis() {
+  if (!canSubmit.value || isPending.value) return
+
+  try {
+    // Map UI keys -> API keys (rear -> back)
+    const apiFiles: Partial<Record<ZoneKeyApi, File>> = {
+      front: filesByZone.value.front || undefined,
+      back: filesByZone.value.rear || undefined,
+      left: filesByZone.value.left || undefined,
+      right: filesByZone.value.right || undefined,
+    }
+
+    await analyze(apiFiles)
+
+    toast.success('Анализ выполнен', {
+      description: 'Результат сохранён. Открываем отчёт…',
+    })
+
+    // Go to Analysis (it will load "latest")
+    router.push({ name: 'analysis' })
+  } catch {
+    const msg =  'Не удалось выполнить анализ'
+    toast.error('Ошибка анализа', { description: msg })
+  }
 }
 
 function stopCamera() {
@@ -389,14 +561,19 @@ function stopCamera() {
   streamReady.value = false
 }
 
-// Lifecycle
+/* Lifecycle */
 onMounted(async () => {
-  try {
-    await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-  } catch {
-    /* permission denied silently on mount */
-  }
+  // Soft permission warm-up (avoid scary prompts mid-flow)
+  try { await navigator.mediaDevices.getUserMedia({ video: true, audio: false }) } catch {}
 })
-
-onUnmounted(stopCamera)
+onUnmounted(() => {
+  stopCamera()
+  // cleanup object URLs
+  Object.values(thumbs.value).forEach(u => u && URL.revokeObjectURL(u))
+})
 </script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active { transition: opacity .2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>

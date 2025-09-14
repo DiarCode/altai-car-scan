@@ -1,261 +1,189 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuth } from '../composables/use-auth.composable'
-import { KAZAKHSTAN_CITIES } from '../constants/cities.constants'
-import AppInput from '../components/app-input.vue'
-import AppButton from '../components/app-button.vue'
-import AppSelect from '../components/app-select.vue'
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+
+
+import AppButton from '../components/app-button.vue';
+import AppInput from '../components/app-input.vue';
+import AppSelect from '../components/app-select.vue';
+import { useAuth } from '../composables/use-auth.composable';
+import { KAZAKHSTAN_CITIES } from '../constants/cities.constants';
+
+
+
+
+
+type Step = 'account' | 'car'
 
 const router = useRouter()
 const authState = useAuth()
-
 const currentYear = new Date().getFullYear()
+const step = ref<Step>('account')
 
-// City options for select
-const cityOptions = computed(() => {
-	return KAZAKHSTAN_CITIES.map(city => ({
-		value: city,
-		label: city
-	}))
-})
+/* ---------- Options ---------- */
+const cityOptions = computed(() =>
+  KAZAKHSTAN_CITIES.map(c => ({ value: c, label: c }))
+)
 
-// Validation errors
-const phoneError = computed(() => {
-	if (!authState.registerState.phoneNumber) return undefined
-	const digits = authState.registerState.phoneNumber.replace(/\D/g, '')
-	// Should have exactly 11 digits for +7 format or 8 format
-	return (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8')))
-		? undefined 
-		: 'Неверный формат номера телефона'
-})
-
-const nameError = computed(() => {
-	if (!authState.registerState.name) return undefined
-	return authState.registerState.name.trim().length < 2 
-		? 'Имя должно содержать минимум 2 символа' 
-		: undefined
-})
-
-const carModelError = computed(() => {
-	if (!authState.registerState.carModel) return undefined
-	return authState.registerState.carModel.trim().length < 2 
-		? 'Модель должна содержать минимум 2 символа' 
-		: undefined
-})
-
-const carYearError = computed(() => {
-	const year = authState.registerState.carYear
-	if (!year) return undefined
-	return (year < 1990 || year > currentYear) 
-		? `Год должен быть между 1990 и ${currentYear}` 
-		: undefined
-})
-
-const carColorError = computed(() => {
-	if (!authState.registerState.carColor) return undefined
-	return authState.registerState.carColor.trim().length < 2 
-		? 'Цвет должен содержать минимум 2 символа' 
-		: undefined
-})
-
-const carVinError = computed(() => {
-	if (!authState.registerState.carVin) return undefined
-	const vin = authState.registerState.carVin.trim().toUpperCase()
-	
-	// VIN should be exactly 17 characters
-	if (vin.length !== 17) {
-		return 'VIN номер должен содержать ровно 17 символов'
-	}
-	
-	// VIN should contain only alphanumeric characters (excluding I, O, Q)
-	const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/
-	if (!vinRegex.test(vin)) {
-		return 'VIN номер содержит недопустимые символы'
-	}
-	
-	return undefined
-})
-
-const cityError = computed(() => {
-	if (!authState.registerState.city) return undefined
-	return !KAZAKHSTAN_CITIES.some(city => city === authState.registerState.city)
-		? 'Выберите город из списка' 
-		: undefined
-})
-
-// Form validation
-const isValidForm = computed(() => {
-	return !phoneError.value && 
-		   !nameError.value && 
-		   !carModelError.value && 
-		   !carYearError.value && 
-		   !carColorError.value && 
-		   !carVinError.value &&
-		   !cityError.value &&
-		   authState.registerState.phoneNumber &&
-		   authState.registerState.name &&
-		   authState.registerState.carModel &&
-		   authState.registerState.carYear &&
-		   authState.registerState.carColor &&
-		   authState.registerState.carVin &&
-		   authState.registerState.city
-})
-
+/* ---------- Helpers & Formatters ---------- */
 const formatRegisterPhone = (value: string) => {
-	// Remove all non-digits first
-	let cleanValue = value.replace(/\D/g, '')
-	
-	// Limit to maximum 11 digits
-	cleanValue = cleanValue.slice(0, 11)
-	
-	// If starts with 8, replace with 7
-	if (cleanValue.startsWith('8')) {
-		cleanValue = '7' + cleanValue.slice(1)
-	}
-	
-	// If starts with 7, add + prefix
-	if (cleanValue.startsWith('7')) {
-		return '+' + cleanValue
-	} else if (cleanValue.length > 0) {
-		// If user types any other number, assume they want Kazakhstan format
-		return '+7' + cleanValue
-	} else {
-		return ''
-	}
+  let s = value.replace(/\D/g, '').slice(0, 11)
+  if (s.startsWith('8')) s = '7' + s.slice(1)
+  if (s.startsWith('7')) return '+' + s
+  return s ? '+7' + s : ''
+}
+const handlePhoneInput = (val: string | number) => {
+  authState.registerState.phoneNumber = formatRegisterPhone(String(val))
+}
+const handleVinInput = (val: string | number) => {
+  authState.registerState.carVin = String(val).toUpperCase()
 }
 
-const handlePhoneInput = (value: string | number) => {
-	const stringValue = String(value)
-	const formatted = formatRegisterPhone(stringValue)
-	authState.registerState.phoneNumber = formatted
-}
-
-const handleVinInput = (value: string | number) => {
-	const stringValue = String(value).toUpperCase()
-	authState.registerState.carVin = stringValue
-}
-
-const handleRegister = async () => {
-	await authState.register()
-}
-
-const goBack = () => {
-	router.push('/welcome')
-}
-
-const goToLogin = () => {
-	router.push('/auth/login')
-}
-
-// Reset form when component mounts
-onMounted(() => {
-	authState.resetForm()
+/* ---------- Validation (ALL required) ---------- */
+const phoneError = computed(() => {
+  const v = authState.registerState.phoneNumber || ''
+  const d = v.replace(/\D/g, '')
+  return d.length === 11 && (d.startsWith('7') || d.startsWith('8')) ? undefined : 'Неверный формат номера'
 })
+const nameError = computed(() => {
+  const v = (authState.registerState.name || '').trim()
+  return v.length >= 2 ? undefined : 'Минимум 2 символа'
+})
+const cityError = computed(() => {
+  const v = authState.registerState.city
+  return KAZAKHSTAN_CITIES.includes(v) ? undefined : 'Выберите город'
+})
+const carModelError = computed(() => {
+  const v = (authState.registerState.carModel || '').trim()
+  return v.length >= 2 ? undefined : 'Минимум 2 символа'
+})
+const carYearError = computed(() => {
+  const y = Number(authState.registerState.carYear)
+  return y >= 1990 && y <= currentYear ? undefined : `Год между 1990 и ${currentYear}`
+})
+const carColorError = computed(() => {
+  const v = (authState.registerState.carColor || '').trim()
+  return v.length >= 2 ? undefined : 'Минимум 2 символа'
+})
+const carVinError = computed(() => {
+  const v = (authState.registerState.carVin || '').trim().toUpperCase()
+  if (v.length !== 17) return 'VIN — 17 символов'
+  return /^[A-HJ-NPR-Z0-9]{17}$/.test(v) ? undefined : 'Недопустимые символы'
+})
+
+/* ---------- Step validity ---------- */
+const isAccountValid = computed(() =>
+  !phoneError.value && !nameError.value && !cityError.value &&
+  !!authState.registerState.phoneNumber && !!authState.registerState.name && !!authState.registerState.city
+)
+const isCarValid = computed(() =>
+  !carModelError.value && !carYearError.value && !carColorError.value && !carVinError.value &&
+  !!authState.registerState.carModel && !!authState.registerState.carYear &&
+  !!authState.registerState.carColor && !!authState.registerState.carVin
+)
+
+/* ---------- Actions ---------- */
+const nextStep = () => { if (isAccountValid.value) step.value = 'car' }
+const prevStep = () => { step.value = 'account' }
+const handleRegister = async () => { if (isCarValid.value) await authState.register() }
+const goBack = () => router.push('/welcome')
+const goToLogin = () => router.push('/auth/login')
+
+onMounted(() => authState.resetForm())
 </script>
 
 <template>
-	<div class="min-h-screen bg-background flex flex-col">
-		<!-- Header -->
-		<div class="flex items-center justify-between p-4 border-b border-border">
-			<button
-				@click="goBack"
-				class="p-2 hover:bg-accent rounded-lg transition-colors"
-			>
-				<svg class="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-				</svg>
-			</button>
-			<h1 class="text-lg font-semibold text-foreground">Регистрация</h1>
-			<div class="w-10"></div> <!-- Spacer -->
+	<div class="bg-gradient-to-b from-white via-slate-50 to-slate-100 min-h-screen text-slate-900">
+		<!-- soft accents -->
+		<div class="-z-10 fixed inset-0 opacity-25 pointer-events-none">
+			<div
+				class="-top-24 -right-28 absolute blur-3xl rounded-full w-80 h-80"
+				style="background:radial-gradient(closest-side, rgba(16,185,129,.25), transparent)"
+			/>
 		</div>
-		
-		<!-- Content -->
-		<div class="flex-1 px-6 py-8">
-			<!-- Registration Form -->
-			<div class="space-y-6">
-				<div class="text-center">
-					<h2 class="text-2xl font-bold text-foreground mb-2">
-						Создать аккаунт
-					</h2>
-					<p class="text-muted-foreground">
-						Заполните информацию для регистрации
-					</p>
+
+		<!-- Header -->
+		<header class="px-5 pt-4">
+			<div class="flex justify-between items-center mx-auto max-w-sm">
+				<button
+					@click="goBack"
+					aria-label="Назад"
+					class="inline-grid place-items-center bg-white/80 hover:bg-white border border-slate-200 rounded-xl w-10 h-10 transition"
+				>
+					<svg
+						class="w-5 h-5 text-slate-700"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M15 19l-7-7 7-7"
+						/>
+					</svg>
+				</button>
+				<h1 class="font-semibold text-xl tracking-tight">Регистрация</h1>
+				<div class="w-10 h-10"></div>
+			</div>
+
+			<!-- Stepper -->
+			<div class="mx-auto mt-3 max-w-sm">
+				<div class="flex items-center gap-2">
+					<div class="flex-1 bg-slate-200 rounded-full h-2 overflow-hidden">
+						<div
+							class="bg-lime-600 h-full transition-all"
+							:style="{ width: step === 'account' ? '50%' : '100%' }"
+						/>
+					</div>
+					<span class="font-medium text-slate-600 text-xs">
+						{{ step === 'account' ? 'Шаг 1/2' : 'Шаг 2/2' }}
+					</span>
 				</div>
-				
-				<form @submit.prevent="handleRegister" class="space-y-4">
-					<!-- Personal Information -->
-					<div class="space-y-4">
-						<h3 class="text-lg font-medium text-foreground border-b border-border pb-2">
-							Личная информация
-						</h3>
-						
-						<app-input
+			</div>
+		</header>
+
+		<!-- Content -->
+		<main class="mt-4 px-5 pb-56">
+			<div class="mx-auto max-w-sm">
+				<section
+					class="bg-white/80 shadow-sm backdrop-blur p-6 border border-slate-200 rounded-3xl"
+				>
+					<h2 class="mb-1 font-bold text-3xl leading-tight">
+						{{ step === 'account' ? 'Личные данные' : 'Данные автомобиля' }}
+					</h2>
+					<p class="mb-6 text-slate-600 text-base">
+						{{ step === 'account'
+              ? 'Заполните основные контакты для создания аккаунта'
+              : 'Укажите сведения об автомобиле для точных рекомендаций' }}
+					</p>
+
+					<!-- STEP 1: Account -->
+					<div
+						v-if="step === 'account'"
+						class="space-y-5"
+					>
+						<AppInput
 							:modelValue="authState.registerState.phoneNumber"
 							@update:modelValue="handlePhoneInput"
 							label="Номер телефона"
-							placeholder="+7 (___) ___-__-__"
+							placeholder="+7 777 123 45 67"
 							type="tel"
 							inputmode="tel"
 							required
 							:error="phoneError"
-							hint="Формат: +7 или 8 с 10 цифрами (например: +77771234567)"
+							hint="Формат: +7 и 10 цифр"
 						/>
-						
-						<app-input
+						<AppInput
 							v-model="authState.registerState.name"
 							label="Полное имя"
-							placeholder="Введите ваше имя"
+							placeholder="Как к вам обращаться"
 							required
 							:error="nameError"
 						/>
-					</div>
-					
-					<!-- Car Information -->
-					<div class="space-y-4">
-						<h3 class="text-lg font-medium text-foreground border-b border-border pb-2">
-							Информация об автомобиле
-						</h3>
-						
-						<app-input
-							v-model="authState.registerState.carModel"
-							label="Марка и модель"
-							placeholder="например, Toyota Camry"
-							required
-							:error="carModelError"
-						/>
-						
-						<app-input
-							v-model="authState.registerState.carYear"
-							label="Год выпуска"
-							type="number"
-							inputmode="numeric"
-							:min="1990"
-							:max="currentYear"
-							required
-							:error="carYearError"
-						/>
-						
-						<app-input
-							v-model="authState.registerState.carColor"
-							label="Цвет"
-							placeholder="например, Белый"
-							required
-							:error="carColorError"
-						/>
-						
-						<app-input
-							:modelValue="authState.registerState.carVin"
-							@update:modelValue="handleVinInput"
-							label="VIN номер"
-							placeholder="например, 1HGBH41JXMN109186"
-							required
-							:error="carVinError"
-							hint="17-символьный уникальный номер автомобиля"
-							:maxlength="17"
-						/>
-						
-						<app-select
+						<AppSelect
 							v-model="authState.registerState.city"
 							label="Город"
 							:options="cityOptions"
@@ -264,49 +192,95 @@ onMounted(() => {
 							:error="cityError"
 						/>
 					</div>
-					
-					<div class="pt-4">
-						<app-button
-							type="submit"
-							:loading="authState.isLoading.value"
-							:disabled="!isValidForm"
-							full-width
-							size="lg"
+
+					<!-- STEP 2: Car -->
+					<div
+						v-else
+						class="space-y-5"
+					>
+						<AppInput
+							:modelValue="authState.registerState.carVin"
+							@update:modelValue="handleVinInput"
+							label="VIN"
+							placeholder="Напр., 1HGBH41JXMN109186"
+							required
+							:maxlength="17"
+							:error="carVinError"
+						/>
+						<div class="gap-3 grid grid-cols-2">
+							<AppInput
+								v-model="authState.registerState.carModel"
+								label="Марка и модель"
+								placeholder="Toyota Camry"
+								required
+								:error="carModelError"
+							/>
+							<AppInput
+								v-model="authState.registerState.carYear"
+								label="Год"
+								type="number"
+								inputmode="numeric"
+								:min="1990"
+								:max="currentYear"
+								required
+								:error="carYearError"
+							/>
+						</div>
+						<AppInput
+							v-model="authState.registerState.carColor"
+							label="Цвет"
+							placeholder="Белый"
+							required
+							:error="carColorError"
+						/>
+					</div>
+				</section>
+
+				<!-- Bottom sticky actions -->
+				<div
+					class="right-0 bottom-0 pb-[calc(16px+env(safe-area-inset-bottom))] left-0 z-10 fixed bg-gradient-to-t from-white to-white/70 backdrop-blur px-5 pt-4 border-slate-200 border-t"
+				>
+					<div class="flex items-center gap-3 mx-auto max-w-sm">
+						<AppButton
+							v-if="step === 'car'"
+							variant="secondary"
+							class="flex-1 h-12"
+							@click="prevStep"
 						>
-							Продолжить
-						</app-button>
+							Назад
+						</AppButton>
+
+						<AppButton
+							v-if="step === 'account'"
+							class="flex-1 h-12"
+							:disabled="!isAccountValid"
+							@click="nextStep"
+						>
+							Далее
+						</AppButton>
+
+						<AppButton
+							v-else
+							class="flex-1 h-12"
+							:loading="authState.isLoading.value"
+							:disabled="!isCarValid"
+							@click="handleRegister"
+						>
+							Создать аккаунт
+						</AppButton>
 					</div>
-				</form>
-			</div>
-			
-			<!-- Info Section -->
-			<div class="mt-8 p-4 bg-card rounded-lg border border-border">
-				<div class="flex items-start space-x-3">
-					<div class="w-8 h-8 bg-primary/70 rounded-full flex items-center justify-center flex-shrink-0 border border-primary-foreground/10">
-						<svg class="w-4 h-4 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-					</div>
-					<div>
-						<h3 class="text-sm font-medium text-foreground mb-1">
-							После регистрации
-						</h3>
-						<p class="text-xs text-muted-foreground">
-							Вы будете перенаправлены на страницу входа для авторизации
-						</p>
-					</div>
+
+					<p class="mt-6 text-slate-600 text-sm text-center">
+						Уже есть аккаунт?
+						<button
+							@click="goToLogin"
+							class="font-medium text-lime-700 hover:underline"
+						>
+							Войти
+						</button>
+					</p>
 				</div>
 			</div>
-		</div>
-		
-		<!-- Footer -->
-		<div class="px-6 pb-6 text-center">
-			<p class="text-sm text-muted-foreground">
-				Уже есть аккаунт?
-				<button @click="goToLogin" class="text-lime-600 hover:underline">
-					Войти
-				</button>
-			</p>
-		</div>
+		</main>
 	</div>
 </template>

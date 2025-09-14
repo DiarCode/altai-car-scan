@@ -18,7 +18,7 @@ export const KAZAKHSTAN_CITIES = [
 	'Туркестан',
 	'Кокшетау',
 	'Талдыкорган',
-	'Экибастуз'
-] as const
+	'Экибастуз',
+]
 
-export type KazakhstanCity = typeof KAZAKHSTAN_CITIES[number]
+export type KazakhstanCity = (typeof KAZAKHSTAN_CITIES)[number]

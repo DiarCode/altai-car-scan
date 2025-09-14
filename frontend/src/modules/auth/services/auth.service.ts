@@ -1,9 +1,9 @@
-import type { 
-	LoginRequest, 
-	RegisterRequest, 
-	OtpVerificationRequest, 
-	AuthResponse, 
-	User 
+import type {
+	LoginRequest,
+	RegisterRequest,
+	OtpVerificationRequest,
+	AuthResponse,
+	User
 } from '../models/auth.models'
 import { apiClient } from '@/core/configs/axios-instance.config'
 
@@ -48,7 +48,7 @@ class AuthService {
 			await apiClient.post('/users/otp/request', {
 				phoneNumber
 			})
-			
+
 			return {
 				success: true,
 				message: 'SMS с кодом отправлен'
@@ -61,7 +61,7 @@ class AuthService {
 			}
 		}
 	}
-	
+
 	// Verify OTP and create session (still accepts hardcoded "1111")
 	async verifyOtp(request: OtpVerificationRequest): Promise<AuthResponse> {
 		try {
@@ -107,7 +107,7 @@ class AuthService {
 			}
 		}
 	}
-	
+
 	// Registration with backend API
 	async register(request: RegisterRequest): Promise<AuthResponse> {
 		try {
@@ -118,14 +118,14 @@ class AuthService {
 					message: 'Имя обязательно для заполнения'
 				}
 			}
-			
+
 			if (!request.carModel.trim()) {
 				return {
 					success: false,
 					message: 'Модель автомобиля обязательна для заполнения'
 				}
 			}
-			
+
 			if (request.carYear < 1990 || request.carYear > new Date().getFullYear()) {
 				return {
 					success: false,
@@ -152,7 +152,7 @@ class AuthService {
 				carColor: request.carColor,
 				vinNumber: request.carVin // Backend uses 'vinNumber' instead of 'carVin'
 			})
-			
+
 			return {
 				success: true,
 				message: 'Регистрация успешна. SMS с кодом отправлен'
@@ -165,30 +165,18 @@ class AuthService {
 			}
 		}
 	}
-	
+
 	// Get current user from backend
 	async getCurrentUser(): Promise<User | null> {
 		try {
-			const response = await apiClient.get('/users/me')
-			const userData = response.data
-			
-			// Map backend response to frontend User model
-			return {
-				id: userData.id.toString(),
-				phoneNumber: userData.phoneNumber,
-				name: userData.name,
-				carModel: userData.carModel,
-				carYear: userData.carYear,
-				carColor: userData.carColor,
-				carVin: userData.vinNumber, // Backend uses 'vinNumber', frontend uses 'carVin'
-				city: userData.city
-			}
+			const response = await apiClient.get<User>('/users/me')
+			return response.data
 		} catch (error: unknown) {
 			console.error('Get current user error:', error)
 			return null
 		}
 	}
-	
+
 	// Logout and clear backend session
 	async logout(): Promise<void> {
 		try {
@@ -197,7 +185,7 @@ class AuthService {
 			console.error('Logout error:', error)
 			// Even if logout fails on backend, we should clear local state
 		}
-		
+
 		// Clear any local storage items (keeping for backward compatibility)
 		localStorage.removeItem('user')
 		localStorage.removeItem('token')
