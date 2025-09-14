@@ -1,19 +1,29 @@
 import {
+	Get,
+	NotFoundException,
 	Controller,
 	Post,
 	UploadedFiles,
 	UseInterceptors,
 	BadRequestException,
+	UseGuards,
 } from '@nestjs/common'
-import { AnyFilesInterceptor } from '@nestjs/platform-express'
-import {
-	ImageClassificationService,
-	isClassificationResultValid,
-	isLLMCarAnalysisResultValid,
-} from './image-classification.service'
+import { FileFieldsInterceptor } from '@nestjs/platform-express'
+import { CarAnalysisDto } from './dtos/car-analysis.dto'
+import { CarAnalysisMapper } from './utils/car-analysis.mapper'
+import { ImageClassificationService } from './image-classification.service'
 import { GetCurrentUser } from 'src/common/decorators/get-current-users.decorator'
 import { UserClaims } from 'src/common/types/user-request.interface'
+import {
+	isClassificationResultValid,
+	isLLMCarAnalysisResultValid,
+	isMultiClassificationResultValid,
+	LLMCarAnalysisResult,
+	ClassificationPipelineResult,
+} from './interfaces'
+import { UsersAuthGuard } from 'src/common/guards/users-auth.guard'
 
+@UseGuards(UsersAuthGuard)
 @Controller('image-classification')
 export class ImageClassificationController {
 	private readonly service: ImageClassificationService
@@ -23,38 +33,62 @@ export class ImageClassificationController {
 	}
 
 	/**
-	 * Accepts 4 car photos (front, back, left, right), uploads to S3, calls classification pipeline, and returns results.
+	 * Accepts a car photo (bytes), calls classification pipeline, and returns LLM analysis.
 	 */
 	@Post('analyze-car')
-	@UseInterceptors(AnyFilesInterceptor())
+	@UseInterceptors(
+		FileFieldsInterceptor([
+			{ name: 'front', maxCount: 1 },
+			{ name: 'back', maxCount: 1 },
+			{ name: 'left', maxCount: 1 },
+			{ name: 'right', maxCount: 1 },
+		]),
+	)
 	async analyzeCar(
-		@UploadedFiles() files: Express.Multer.File[],
+		@UploadedFiles()
+		files: {
+			front?: Express.Multer.File[]
+			back?: Express.Multer.File[]
+			left?: Express.Multer.File[]
+			right?: Express.Multer.File[]
+		},
 		@GetCurrentUser() user: UserClaims,
-	) {
-		// Validate 4 files
-		if (!files || files.length !== 4) {
-			throw new BadRequestException('Exactly 4 images required: front, back, left, right')
+	): Promise<LLMCarAnalysisResult> {
+		const orderedKeys: (keyof typeof files)[] = ['front', 'back', 'left', 'right']
+		const present: Express.Multer.File[] = []
+		for (const k of orderedKeys) {
+			const arr = files[k]
+			if (arr && arr.length > 0) present.push(arr[0])
 		}
-		const angles = ['front', 'back', 'left', 'right']
-		const s3Keys: string[] = []
-		for (let i = 0; i < 4; i++) {
-			const file = files[i]
-			const key = `user-${user.id}/images/${angles[i]}-${Date.now()}.jpg`
-			await this.service.uploadImageToS3(key, file.buffer)
-			s3Keys.push(key)
+		if (present.length === 0) {
+			throw new BadRequestException('At least one of front/back/left/right images is required')
 		}
-		// Call classification pipeline
-		const pipelineResult = await this.service.callClassificationPipeline(s3Keys)
-		// Validate result structure (type guard)
-		if (!isClassificationResultValid(pipelineResult)) {
-			throw new BadRequestException('Invalid classification pipeline result')
+		const buffers = present.map(f => f.buffer).filter(Boolean)
+		let pipelineResult: ClassificationPipelineResult | ClassificationPipelineResult[]
+		if (buffers.length === 1) {
+			const single = await this.service.callClassificationPipeline(buffers[0])
+			if (!isClassificationResultValid(single)) {
+				throw new BadRequestException('Invalid classification pipeline result')
+			}
+			pipelineResult = single
+		} else {
+			const multi = await this.service.callClassificationPipelineMulti(buffers)
+			if (!isMultiClassificationResultValid(multi) || multi.length !== buffers.length) {
+				throw new BadRequestException('Failed to classify all images')
+			}
+			pipelineResult = multi
 		}
-		// Call LLM adapter for car analysis
 		const llmResult = await this.service.analyzeCarWithLLM(pipelineResult, user.id)
-		// Validate LLM result
 		if (!isLLMCarAnalysisResultValid(llmResult)) {
 			throw new BadRequestException('Invalid LLM analysis result')
 		}
 		return llmResult
+	}
+
+	@Get('latest')
+	async getLatestAnalysis(@GetCurrentUser() user: UserClaims): Promise<CarAnalysisDto> {
+		const analysis = await this.service.getLatestAnalysis(user.id)
+		if (!analysis) throw new NotFoundException('No analysis found')
+		return CarAnalysisMapper.toDto(analysis)
 	}
 }

@@ -10,4 +10,4 @@ This folder contains a production-ready inference pipeline:
 ```bash
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-python local_infer.py /path/to/car.jpg viz.jpg
+```

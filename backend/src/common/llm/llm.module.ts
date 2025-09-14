@@ -1,20 +1,13 @@
 import { Module } from '@nestjs/common'
 import { PromptRegistry } from './prompt.registry'
 import { PromptBuilderService } from './prompt.builder'
-// import { OpenAiSegmentsAdapter } from '../adapters/openai-segment-generator.adapter'
+import { LLMCarAnalysisAdapter } from '../adapters/llm-car-analysis.adapter'
 import { PrismaModule } from 'src/prisma/prisma.module'
 import { AppConfigModule } from '../config/config.module'
 
 @Module({
 	imports: [AppConfigModule, PrismaModule],
-	providers: [
-		PromptRegistry,
-		PromptBuilderService,
-		// {
-		// 	provide: 'SegmentsAdapter',
-		// 	useClass: OpenAiSegmentsAdapter,
-		// },
-	],
-	exports: [PromptBuilderService, PromptRegistry],
+	providers: [PromptRegistry, PromptBuilderService, LLMCarAnalysisAdapter],
+	exports: [PromptBuilderService, PromptRegistry, LLMCarAnalysisAdapter],
 })
 export class LlmModule {}

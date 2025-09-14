@@ -75,6 +75,7 @@ CREATE TABLE "users_sessions" (
 CREATE TABLE "indrive_partners" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
+    "city" TEXT NOT NULL,
     "address" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
     "description" TEXT,
