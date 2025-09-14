@@ -4,21 +4,21 @@ services:
   ########################################################################
   traefik:
     image: traefik:latest
-    container_name: itutor-traefik
+    container_name: carscan-traefik
     command:
-      - "--api.dashboard=true"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
+      - '--api.dashboard=true'
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
       # Let’s Encrypt ACME config
-      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.myresolver.acme.email=${LETSENCRYPT_EMAIL}"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - '--certificatesresolvers.myresolver.acme.httpchallenge=true'
+      - '--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web'
+      - '--certificatesresolvers.myresolver.acme.email=${LETSENCRYPT_EMAIL}'
+      - '--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json'
     ports:
-      - "80:80" # HTTP
-      - "443:443" # HTTPS
+      - '80:80' # HTTP
+      - '443:443' # HTTPS
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/letsencrypt:/letsencrypt
@@ -30,7 +30,7 @@ services:
   # 2) Databases and Storage
   ########################################################################
   postgres:
-    container_name: itutor-postgres
+    container_name: carscan-postgres
     image: postgres:latest
     env_file:
       - ./.env
@@ -41,7 +41,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -50,11 +50,11 @@ services:
       - app_network
 
   minio:
-    container_name: itutor-minio
+    container_name: carscan-minio
     image: minio/minio:RELEASE.2025-02-18T16-25-55Z
     ports:
-      - "9000:9000" # S3 API
-      - "9001:9001" # Web UI
+      - '9000:9000' # S3 API
+      - '9001:9001' # Web UI
     env_file:
       - ./.env
     environment:
@@ -69,7 +69,7 @@ services:
 
   # 3) Database Management Tools (Optional for Development)
   pgadmin:
-    container_name: itutor-pgadmin
+    container_name: carscan-pgadmin
     image: dpage/pgadmin4
     env_file:
       - ./.env
@@ -77,7 +77,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PG_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PG_PASSWORD}
     ports:
-      - "8081:80"
+      - '8081:80'
     depends_on:
       postgres:
         condition: service_healthy
@@ -85,12 +85,11 @@ services:
     networks:
       - app_network
 
-
   ########################################################################
   # 4) Backend (Golang Gin)
   ########################################################################
   backend:
-    container_name: itutor-backend
+    container_name: carscan-backend
     build:
       context: ./backend
       args:
@@ -116,7 +115,7 @@ services:
         # Server
         CLIENT_URL: ${CLIENT_URL}
         SERVER_PORT: ${SERVER_PORT}
-        USE_STUB_ADAPTER: ${USE_STUB_ADAPTER}
+        CLASSIFICATION_PIPELINE_URL: ${CLASSIFICATION_PIPELINE_URL}
 
         # WhatsApp
         WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN}
@@ -143,7 +142,7 @@ services:
     env_file:
       - ./.env
     ports:
-      - "8080:8080"
+      - '8080:8080'
     depends_on:
       postgres:
         condition: service_healthy
@@ -157,7 +156,7 @@ services:
   # 5) Frontend (Vite Vue 3) w/ Nginx
   ########################################################################
   frontend:
-    container_name: itutor-frontend
+    container_name: carscan-frontend
     build:
       context: ./frontend
       args:
@@ -173,22 +172,22 @@ services:
         condition: service_started
     labels:
       # Enable Traefik for this service
-      - "traefik.enable=true"
+      - 'traefik.enable=true'
 
       # HTTPS router
-      - "traefik.http.routers.frontend-https.rule=Host(`${NGINX_SERVER_NAME}`)"
-      - "traefik.http.routers.frontend-https.entrypoints=websecure"
-      - "traefik.http.routers.frontend-https.tls=true"
-      - "traefik.http.routers.frontend-https.tls.certresolver=myresolver"
+      - 'traefik.http.routers.frontend-https.rule=Host(`${NGINX_SERVER_NAME}`)'
+      - 'traefik.http.routers.frontend-https.entrypoints=websecure'
+      - 'traefik.http.routers.frontend-https.tls=true'
+      - 'traefik.http.routers.frontend-https.tls.certresolver=myresolver'
 
       # HTTP router for redirect -> HTTPS
-      - "traefik.http.routers.frontend-http.rule=Host(`${NGINX_SERVER_NAME}`)"
-      - "traefik.http.routers.frontend-http.entrypoints=web"
-      - "traefik.http.middlewares.default-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.frontend-http.middlewares=default-redirect"
+      - 'traefik.http.routers.frontend-http.rule=Host(`${NGINX_SERVER_NAME}`)'
+      - 'traefik.http.routers.frontend-http.entrypoints=web'
+      - 'traefik.http.middlewares.default-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.frontend-http.middlewares=default-redirect'
 
       # Internal port that Nginx listens on
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - 'traefik.http.services.frontend.loadbalancer.server.port=80'
 
 ######################################################################
 # Named Volumes
